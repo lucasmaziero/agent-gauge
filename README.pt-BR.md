@@ -264,6 +264,7 @@ installer/          empacotamento       tools/       geradores de ícone e previ
 | `providers/` | Um `Provider` por agente: credenciais, coleta, incidentes, totais de tokens |
 | `signin.py` | Separa os dois becos sem token e abre a página de setup |
 | `diag.py` | Registro limitado de ciclos que falharam, escrito só quando um falha |
+| `net.py` | O único contexto TLS de todas as chamadas HTTPS, verificado pelo sistema |
 | `release.py` | Lê a última tag publicada e compara com este build |
 | `about.py` | Versão, autor e a verificação de atualização, num cartão |
 | `api.py` | Consulta de uso e incidentes; `parse()` separado para testar sem rede |
@@ -281,7 +282,7 @@ installer/          empacotamento       tools/       geradores de ícone e previ
 
 ```powershell
 uv sync                                           # cria o .venv com o grupo de dev
-uv run pytest                                     # 240 testes, sem rede e sem janela
+uv run pytest                                     # 263 testes, sem rede e sem janela
 uv run ruff check .                               # lint (regras em pyproject.toml)
 uv run python tools/preview.py docs/preview.png   # render offline das duas telas
 $env:AGENT_GAUGE_DEBUG=1; uv run agent-gauge    # imprime cada ciclo no console
@@ -418,6 +419,18 @@ Coisas que custaram tempo e que o código sozinho não explica:
 - **Clicar no widget com o painel aberto chega em duas partes.** O `Qt.Popup` se fecha sozinho no
   clique de fora e o widget recebe o mesmo clique em seguida; sem guarda, o painel fechava e reabria
   no mesmo gesto. `Panel.just_closed()` engole o segundo evento por 250 ms.
+- **A confiança HTTPS passa pelo sistema operacional, não pela loja do próprio OpenSSL.** O Windows
+  mantém em disco um conjunto pequeno de certificados raiz e busca os demais sob demanda pela
+  CryptoAPI — por isso um navegador abre um site que o Python, verificando pelo OpenSSL, recusa com
+  "unable to get local issuer certificate". Não é hipotético: foi relatado de uma máquina onde o
+  medidor lia a Anthropic normalmente, o navegador abria o `api.github.com` normalmente, e a
+  verificação de atualização dentro do mesmo app não conseguia. O `net.context()` entrega a
+  verificação ao sistema, então a resposta é a mesma em que todo o resto daquela máquina acredita,
+  inclusive a CA de um proxy corporativo — e toda chamada HTTPS do app passa por ele. Antes, uma
+  das cinco passava contexto e quatro não, e foi por isso que a diferença ficou invisível tanto
+  tempo. Onde a camada do sistema não estiver disponível o verificador antigo ainda roda — recusar
+  a conexão seria pior —, mas esse fallback escreve uma linha no `errors.log`, porque correção que
+  se desliga em silêncio é indistinguível de correção nenhuma.
 - **Falha às 3 da manhã não deixava rastro.** A mensagem ficava na tela até o ciclo seguinte
   sobrescrever, então quando alguém ia olhar o app já tinha se recuperado e a evidência tinha
   sumido. O `errors.log` agora guarda os últimos duzentos ciclos com falha e o contexto que os

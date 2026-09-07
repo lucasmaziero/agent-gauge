@@ -79,7 +79,7 @@ class _Response:
 
 
 def _answer(monkeypatch, payload: bytes):
-    def fake(request, timeout=None):
+    def fake(request, timeout=None, **kwargs):
         assert request.full_url == release.LATEST_ENDPOINT
         # As itself, not as Claude Code: this call is to GitHub.
         assert request.get_header("User-agent").startswith("agent-gauge/")
@@ -106,7 +106,7 @@ def test_malformed_json_says_so(monkeypatch):
 
 
 def test_a_network_failure_is_a_problem_not_an_exception(monkeypatch):
-    def boom(request, timeout=None):
+    def boom(request, timeout=None, **kwargs):
         raise urllib.error.URLError("offline")
     monkeypatch.setattr(urllib.request, "urlopen", boom)
     latest = release.fetch_latest()
@@ -115,7 +115,7 @@ def test_a_network_failure_is_a_problem_not_an_exception(monkeypatch):
 
 
 def _http_error(monkeypatch, code, headers=None):
-    def refuse(request, timeout=None):
+    def refuse(request, timeout=None, **kwargs):
         raise urllib.error.HTTPError(
             request.full_url, code, "no", headers or {}, None)
     monkeypatch.setattr(urllib.request, "urlopen", refuse)
