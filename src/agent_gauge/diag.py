@@ -30,12 +30,38 @@ def _format(kind: str, fields: dict) -> str:
     return f"{stamp} {kind} {parts}".rstrip()
 
 
-def _run_of(line: str, kind: str) -> tuple[int, str] | None:
-    """If `line` closes a run of this same kind, how long that run already is
-    and when it started. None means a different kind, which starts a new run."""
+# Fields that say which failure this is, rather than how it is going. A run
+# collapses only across records that agree on all of them: keyed on the kind
+# alone, a rate-limited update check and an offline one folded into one line
+# and the first was lost - in the file whose whole job is telling them apart.
+DISCRIMINATORS = ("problem", "code", "past_expiry")
+
+
+def _signature(kind: str, fields: dict) -> str:
+    marks = [f"{name}={fields[name]}" for name in DISCRIMINATORS
+             if fields.get(name) not in (None, "")]
+    return " ".join([kind, *marks])
+
+
+def _signature_of(line: str) -> str:
     parts = line.split()
-    if len(parts) < 3 or parts[2] != kind:
+    if len(parts) < 3:
+        return ""
+    kind = parts[2]
+    found = {}
+    for part in parts[3:]:
+        name, _, value = part.partition("=")
+        if name in DISCRIMINATORS:
+            found[name] = value
+    return _signature(kind, found)
+
+
+def _run_of(line: str, signature: str) -> tuple[int, str] | None:
+    """If `line` closes a run of this same failure, how long that run already is
+    and when it started. None means a different one, which starts a new line."""
+    if _signature_of(line) != signature:
         return None
+    parts = line.split()
     count, since = 1, parts[1]
     for part in parts[3:]:
         if part.startswith("repeat=") and part[7:].isdigit():
@@ -62,7 +88,7 @@ def record(kind: str, **fields) -> None:
                     if LOG_FILE.exists() else [])
 
         line = _format(kind, fields)
-        run = _run_of(previous[-1], kind) if previous else None
+        run = _run_of(previous[-1], _signature(kind, fields)) if previous else None
         if run is None:
             kept = [*previous, line]
         else:

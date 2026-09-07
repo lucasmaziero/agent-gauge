@@ -32,6 +32,15 @@ M = 16                       # transparent margin reserved for the shadow
 APP_NAME = "Agent Gauge"
 AUTHOR = "Lucas Maziero"
 
+# What each way of failing is called on screen. Anything unrecognised falls back
+# to the vague one, which is at least not a claim.
+FAILURES = {
+    "offline": "about.unreachable",
+    "rate_limited": "about.rate_limited",
+    "malformed": "about.unreadable",
+    "untagged": "about.unreadable",
+}
+
 
 def link(href: str, text: str) -> str:
     """An anchor the app's colour actually reaches.
@@ -51,7 +60,7 @@ class _Check(QThread):
     urllib call the rest of the app makes and can be tested without Qt.
     """
 
-    finished_with = Signal(str)          # the tag, or "" if GitHub was unreachable
+    finished_with = Signal(object)       # a release.Latest
 
     def run(self) -> None:
         self.finished_with.emit(release.fetch_latest())
@@ -173,15 +182,16 @@ class About(QWidget):
         self._check.finished_with.connect(self._checked)
         self._check.start()
 
-    def _checked(self, tag: str) -> None:
+    def _checked(self, latest) -> None:
+        """None of the failures may be worded as a pass, and they must not be
+        worded as each other either: "could not reach GitHub" sent at least one
+        person looking at their network when GitHub was rate limiting them."""
         self.button.setEnabled(True)
-        if not tag:
-            # Not the same as being up to date, and must not be worded as if it
-            # were: the check did not happen.
-            self.status.setText(t("about.unreachable"))
-        elif release.is_newer(tag):
+        if not latest.ok:
+            self.status.setText(t(FAILURES.get(latest.problem, "about.unreachable")))
+        elif release.is_newer(latest.tag):
             self.status.setText(
-                link(release.RELEASES_URL, t("about.available", version=tag)))
+                link(release.RELEASES_URL, t("about.available", version=latest.tag)))
         else:
             self.status.setText(t("about.current"))
 

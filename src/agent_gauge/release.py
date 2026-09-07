@@ -14,8 +14,9 @@ from __future__ import annotations
 import json
 import urllib.error
 import urllib.request
+from typing import NamedTuple
 
-from . import __version__
+from . import __version__, diag
 
 REPO = "lucasmaziero/agent-gauge"
 LATEST_ENDPOINT = f"https://api.github.com/repos/{REPO}/releases/latest"
@@ -52,11 +53,31 @@ def is_newer(latest: str, current: str = __version__) -> bool:
     return new + (0,) * (width - len(new)) > have + (0,) * (width - len(have))
 
 
-def fetch_latest() -> str:
-    """The newest published tag, or "" if GitHub could not be reached.
+class Latest(NamedTuple):
+    """The newest tag, or why there isn't one.
 
-    An empty string is not "you are up to date" - the caller has to say the
-    check failed, not that it passed.
+    Never "" alone: an empty tag is not "you are up to date", and the reason it
+    is empty is the only thing that tells someone what to do about it.
+    """
+
+    tag: str = ""
+    problem: str = ""          # "", "offline", "rate_limited", "http:<code>"
+
+    @property
+    def ok(self) -> bool:
+        return bool(self.tag)
+
+
+def fetch_latest() -> Latest:
+    """Ask GitHub for the newest published tag.
+
+    Every failure used to come back as the same empty string, which the card
+    reported as "could not reach GitHub" - and HTTPError is a subclass of
+    URLError, so a 403 for the unauthenticated rate limit said exactly that too.
+    Sixty requests an hour is per IP, so an office or anything behind CGNAT can
+    exhaust it without this machine having made a single one. Telling someone
+    their network is down when GitHub is simply counting is a wrong answer, not
+    a vague one.
     """
     request = urllib.request.Request(
         LATEST_ENDPOINT,
@@ -65,6 +86,23 @@ def fetch_latest() -> str:
     try:
         with urllib.request.urlopen(request, timeout=TIMEOUT) as response:
             data = json.loads(response.read().decode("utf-8", "replace"))
-    except (urllib.error.URLError, OSError, json.JSONDecodeError):
-        return ""
-    return str(data.get("tag_name") or "")
+    except urllib.error.HTTPError as exc:
+        remaining = exc.headers.get("X-RateLimit-Remaining") if exc.headers else None
+        exc.close()
+        if exc.code in (403, 429) and remaining == "0":
+            diag.record("update", problem="rate_limited")
+            return Latest(problem="rate_limited")
+        diag.record("update", problem=f"http:{exc.code}")
+        return Latest(problem=f"http:{exc.code}")
+    except (urllib.error.URLError, OSError) as exc:
+        diag.record("update", problem="offline", reason=type(exc).__name__)
+        return Latest(problem="offline")
+    except json.JSONDecodeError:
+        diag.record("update", problem="malformed")
+        return Latest(problem="malformed")
+
+    tag = str(data.get("tag_name") or "")
+    if not tag:
+        diag.record("update", problem="untagged")
+        return Latest(problem="untagged")
+    return Latest(tag=tag)

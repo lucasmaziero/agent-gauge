@@ -89,24 +89,55 @@ def _answer(monkeypatch, payload: bytes):
 
 def test_reads_the_tag(monkeypatch):
     _answer(monkeypatch, json.dumps({"tag_name": "v1.4.0"}).encode())
-    assert release.fetch_latest() == "v1.4.0"
+    latest = release.fetch_latest()
+    assert latest.ok
+    assert latest.tag == "v1.4.0"
+    assert latest.problem == ""
 
 
-def test_a_release_without_a_tag_is_empty(monkeypatch):
+def test_a_release_without_a_tag_says_so(monkeypatch):
     _answer(monkeypatch, json.dumps({"name": "untagged"}).encode())
-    assert release.fetch_latest() == ""
+    assert release.fetch_latest().problem == "untagged"
 
 
-def test_malformed_json_is_empty(monkeypatch):
+def test_malformed_json_says_so(monkeypatch):
     _answer(monkeypatch, b"<html>rate limited</html>")
-    assert release.fetch_latest() == ""
+    assert release.fetch_latest().problem == "malformed"
 
 
-def test_a_network_failure_is_empty_not_an_exception(monkeypatch):
+def test_a_network_failure_is_a_problem_not_an_exception(monkeypatch):
     def boom(request, timeout=None):
         raise urllib.error.URLError("offline")
     monkeypatch.setattr(urllib.request, "urlopen", boom)
-    assert release.fetch_latest() == ""
+    latest = release.fetch_latest()
+    assert not latest.ok
+    assert latest.problem == "offline"
+
+
+def _http_error(monkeypatch, code, headers=None):
+    def refuse(request, timeout=None):
+        raise urllib.error.HTTPError(
+            request.full_url, code, "no", headers or {}, None)
+    monkeypatch.setattr(urllib.request, "urlopen", refuse)
+
+
+def test_the_rate_limit_is_not_reported_as_a_dead_network(monkeypatch):
+    """Sixty requests an hour is per IP, so an office or anything behind CGNAT
+    can exhaust it without this machine having made one. Saying "could not reach
+    GitHub" sent a real person looking at their network."""
+    _http_error(monkeypatch, 403, {"X-RateLimit-Remaining": "0"})
+    assert release.fetch_latest().problem == "rate_limited"
+
+
+def test_a_forbidden_that_is_not_the_rate_limit_keeps_its_code(monkeypatch):
+    _http_error(monkeypatch, 403, {"X-RateLimit-Remaining": "42"})
+    assert release.fetch_latest().problem == "http:403"
+
+
+def test_a_missing_repository_keeps_its_code(monkeypatch):
+    """What a rename would look like if the constant were left behind."""
+    _http_error(monkeypatch, 404)
+    assert release.fetch_latest().problem == "http:404"
 
 
 def test_the_repo_constants_agree():

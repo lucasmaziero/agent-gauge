@@ -126,3 +126,31 @@ def test_an_unwritable_log_never_takes_the_app_down(monkeypatch, sandbox):
     monkeypatch.setattr(diag.Path, "mkdir",
                         lambda *a, **k: (_ for _ in ()).throw(PermissionError("read-only")))
     diag.record("api", code=500)       # must not raise
+
+
+def test_different_failures_of_one_kind_stay_apart():
+    """Keyed on the kind alone, a rate-limited update check and an offline one
+    folded into a single line and the first was lost - in the file whose whole
+    job is telling causes apart."""
+    for _ in range(3):
+        diag.record("update", problem="rate_limited")
+    for _ in range(2):
+        diag.record("update", problem="offline")
+
+    kept = lines()
+    assert len(kept) == 2
+    assert "problem=rate_limited repeat=3" in kept[0]
+    assert "problem=offline repeat=2" in kept[1]
+
+
+def test_the_same_failure_still_collapses():
+    for _ in range(5):
+        diag.record("api", code=500)
+    assert len(lines()) == 1
+    assert "repeat=5" in lines()[0]
+
+
+def test_two_status_codes_are_two_failures():
+    diag.record("api", code=401)
+    diag.record("api", code=500)
+    assert len(lines()) == 2
