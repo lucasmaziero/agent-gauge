@@ -33,13 +33,13 @@ def test_a_newer_tag_offers_the_release_page(about):
     about._checked(latest("v99.0.0"))
     text = about.status.text()
     assert "v99.0.0" in text
-    assert release.RELEASES_URL in text
+    assert release.DOWNLOAD_URL in text
 
 
 def test_the_current_version_says_so(about):
     about._checked(latest(f"v{release.__version__}"))
     assert about.status.text() == i18n.t("about.current")
-    assert release.RELEASES_URL not in about.status.text()
+    assert release.DOWNLOAD_URL not in about.status.text()
 
 
 def test_an_older_tag_is_not_an_update(about):

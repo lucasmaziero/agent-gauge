@@ -142,4 +142,10 @@ def test_a_missing_repository_keeps_its_code(monkeypatch):
 
 def test_the_repo_constants_agree():
     assert release.REPO in release.LATEST_ENDPOINT
-    assert release.REPO in release.RELEASES_URL
+
+
+def test_the_download_link_goes_to_the_project_page():
+    """Not the release page: that is eight files with no indication of which
+    two are yours, and the project page has a card per platform."""
+    assert release.DOWNLOAD_URL.startswith("https://")
+    assert release.DOWNLOAD_URL.endswith("#downloads")

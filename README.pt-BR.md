@@ -192,9 +192,15 @@ você estoura em quarenta minutos. O limiar fica no menu, e desligar também.
 **Sobre.** Um cartão pequeno com a versão, o autor, a licença e o repositório, mais um botão
 **Verificar atualizações**. Essa verificação só roda quando você aperta: não há checagem em segundo
 plano nem atualização automática. Ele lê a última tag do GitHub e, se estiver à frente do build em
-uso, vira link para a página do release — baixar e instalar continua sendo seu. GitHub inalcançável
-é reportado como verificação que falhou, nunca como "você está na versão mais recente", porque o app
-não tem base para a segunda afirmação.
+uso, vira link para a página de download — que nomeia o arquivo de cada sistema, enquanto a página
+do release são oito arquivos e deixa você descobrir quais dois são os seus. Baixar e instalar
+continua sendo seu de qualquer forma.
+
+Verificação que falha nunca é redigida como aprovada, e as formas de falhar não são redigidas umas
+como as outras: rede morta, limite de taxa do GitHub, status HTTP e resposta ilegível dizem cada uma
+o que é, e todas vão para o `errors.log`. Antes todas diziam "não consegui alcançar o GitHub" — que
+para o limite de taxa é resposta errada, não vaga, já que as sessenta requisições por hora são
+contadas por IP e um escritório inteiro esgota sem esta máquina fazer uma.
 
 <br clear="right">
 

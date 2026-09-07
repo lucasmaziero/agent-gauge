@@ -20,7 +20,11 @@ from . import __version__, diag
 
 REPO = "lucasmaziero/agent-gauge"
 LATEST_ENDPOINT = f"https://api.github.com/repos/{REPO}/releases/latest"
-RELEASES_URL = f"https://github.com/{REPO}/releases/latest"
+# Where someone told about a new version is sent. The project page rather
+# than the release page: it names the file for each platform and says what
+# that platform will object to, where the release page is an undifferentiated
+# list of eight files and leaves the reader to work out which two are theirs.
+DOWNLOAD_URL = "https://lucasmaziero.github.io/agent-gauge/#downloads"
 USER_AGENT = f"agent-gauge/{__version__}"
 TIMEOUT = 10
 
@@ -68,6 +72,17 @@ class Latest(NamedTuple):
         return bool(self.tag)
 
 
+def _reason(exc: Exception) -> str:
+    """One log-safe token describing why a connection failed.
+
+    The log is space-separated key=value, so whitespace would break the line it
+    is meant to explain; it is squeezed out rather than quoted.
+    """
+    detail = getattr(exc, "reason", None)
+    text = str(detail if detail is not None else exc).strip()
+    return "_".join(text.split())[:80] or type(exc).__name__
+
+
 def fetch_latest() -> Latest:
     """Ask GitHub for the newest published tag.
 
@@ -95,7 +110,10 @@ def fetch_latest() -> Latest:
         diag.record("update", problem=f"http:{exc.code}")
         return Latest(problem=f"http:{exc.code}")
     except (urllib.error.URLError, OSError) as exc:
-        diag.record("update", problem="offline", reason=type(exc).__name__)
+        # The reason, not the class name: "URLError" says nothing a user or a
+        # maintainer can act on, while "certificate_verify_failed",
+        # "getaddrinfo_failed" and "timed_out" each point somewhere different.
+        diag.record("update", problem="offline", reason=_reason(exc))
         return Latest(problem="offline")
     except json.JSONDecodeError:
         diag.record("update", problem="malformed")

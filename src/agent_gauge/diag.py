@@ -34,7 +34,7 @@ def _format(kind: str, fields: dict) -> str:
 # collapses only across records that agree on all of them: keyed on the kind
 # alone, a rate-limited update check and an offline one folded into one line
 # and the first was lost - in the file whose whole job is telling them apart.
-DISCRIMINATORS = ("problem", "code", "past_expiry")
+DISCRIMINATORS = ("problem", "code", "reason", "past_expiry")
 
 
 def _signature(kind: str, fields: dict) -> str:

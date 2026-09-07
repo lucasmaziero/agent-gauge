@@ -191,7 +191,7 @@ class About(QWidget):
             self.status.setText(t(FAILURES.get(latest.problem, "about.unreachable")))
         elif release.is_newer(latest.tag):
             self.status.setText(
-                link(release.RELEASES_URL, t("about.available", version=latest.tag)))
+                link(release.DOWNLOAD_URL, t("about.available", version=latest.tag)))
         else:
             self.status.setText(t("about.current"))
 

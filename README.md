@@ -193,9 +193,15 @@ rate you hit 100% in forty minutes. Set the threshold in the menu, or turn it of
 **About.** A small card with the version, the author, the licence and the repository, plus a
 **Check for updates** button. That check runs only when you press it: there is no background poll
 and no auto-update. It reads the latest tag from GitHub, and if it is ahead of the running build it
-turns into a link to the release page - downloading and installing stays yours. An unreachable
-GitHub is reported as a failed check, never as "you have the latest version", because the app has no
-basis for the second claim.
+becomes a link to the download page - which names the file for each platform, where the release page
+is eight files and leaves you to work out which two are yours. Downloading and installing stays
+yours either way.
+
+A check that fails is never worded as one that passed, and the ways of failing are not worded as
+each other: a dead network, a GitHub rate limit, an HTTP status and an unreadable answer each say
+so, and each is written to `errors.log`. They all used to read "could not reach GitHub" - which for
+the rate limit is a wrong answer rather than a vague one, since sixty requests an hour is counted
+per IP and an office can exhaust it without this machine making a call.
 
 <br clear="right">
 
