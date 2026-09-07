@@ -119,7 +119,7 @@ class FloatingWidget(QWidget):
         self.setAttribute(Qt.WidgetAttribute.WA_MacAlwaysShowToolWindow)
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
         self.setMouseTracking(True)
-        self.setWindowTitle("Claude Usage")
+        self.setWindowTitle("Agent Gauge")
         self.setWindowOpacity(float(settings["opacity"]))
 
         self.apply_size()

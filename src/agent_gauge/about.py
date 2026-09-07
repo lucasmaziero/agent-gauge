@@ -29,6 +29,7 @@ from .theme import LG, MD, SM
 
 W = 312                      # visible card width; the height follows the layout
 M = 16                       # transparent margin reserved for the shadow
+APP_NAME = "Agent Gauge"
 AUTHOR = "Lucas Maziero"
 
 
@@ -96,7 +97,7 @@ class About(QWidget):
         mark.setPixmap(brand.clawd(13, theme.ACCENT, self.devicePixelRatioF()))
         head.addWidget(mark)
 
-        title = QLabel("CLAUDE USAGE", objectName="title")
+        title = QLabel(APP_NAME.upper(), objectName="title")
         title.setFont(paint.font(9, QFont.Weight.DemiBold))
         head.addWidget(title)
         head.addStretch(1)

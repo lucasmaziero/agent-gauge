@@ -75,3 +75,12 @@ def test_formatters_follow_the_language():
     assert theme.fmt_weekday(now) == "sex"
     assert theme.fmt_countdown(now, now) == "agora"
     assert theme.status_label(api.Usage(ok=True, status_overall="allowed_warning"))[0] == "ATENÇÃO"
+
+
+def test_no_string_still_carries_the_old_product_name():
+    """Six of them did after the rename, because "Claude Usage" with a space
+    matched none of the patterns that were substituted."""
+    for code, table in i18n.STRINGS.items():
+        for key, text in table.items():
+            assert "Claude Usage" not in text, f"{code}/{key}"
+            assert "ClaudeUsage" not in text, f"{code}/{key}"

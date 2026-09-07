@@ -68,3 +68,15 @@ def test_links_carry_the_brand_colour(about):
 def test_the_version_is_shown(about, qapp):
     labels = about.findChildren(type(about.status))
     assert any(f"v{release.__version__}" == label.text() for label in labels)
+
+
+def test_the_card_wears_the_app_s_own_name(about):
+    """The rename missed this one: the title was the literal "CLAUDE USAGE",
+    upper case with a space, which matched none of the patterns the rename
+    substituted. It stayed wrong through two releases."""
+    from agent_gauge import about as about_module
+
+    labels = about.findChildren(type(about.status))
+    titles = [label.text() for label in labels]
+    assert about_module.APP_NAME.upper() in titles
+    assert not any("CLAUDE USAGE" in text for text in titles)

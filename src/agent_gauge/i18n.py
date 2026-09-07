@@ -21,7 +21,7 @@ STRINGS: dict[str, dict[str, str]] = {
         "widget.no_data": "no data",
         "widget.tooltip": ("5h: {h5:.0f}%  resets {h5_clock} (in {h5_left})\n"
                            "7d: {d7:.0f}%  resets {d7_clock} (in {d7_left})"),
-        "widget.tooltip_error": "Claude Usage: {error}",
+        "widget.tooltip_error": "Agent Gauge: {error}",
         # panel
         "panel.window_5h": "5-hour window",
         "panel.window_7d": "7-day window",
@@ -73,7 +73,7 @@ STRINGS: dict[str, dict[str, str]] = {
         "menu.minute": "1 minute",
         "menu.minutes": "{n} minutes",
         # tray
-        "tray.collecting": "Claude Usage: collecting…",
+        "tray.collecting": "Agent Gauge: collecting…",
         "tray.tooltip": ("Claude · 5h {h5:.0f}% (resets {h5_clock})\n"
                          "7d {d7:.0f}% (resets {d7_clock})"),
         # time
@@ -103,7 +103,7 @@ STRINGS: dict[str, dict[str, str]] = {
         "widget.no_data": "sem dados",
         "widget.tooltip": ("5h: {h5:.0f}%  reseta {h5_clock} (em {h5_left})\n"
                            "7d: {d7:.0f}%  reseta {d7_clock} (em {d7_left})"),
-        "widget.tooltip_error": "Claude Usage: {error}",
+        "widget.tooltip_error": "Agent Gauge: {error}",
         # panel
         "panel.window_5h": "Janela de 5 horas",
         "panel.window_7d": "Janela de 7 dias",
@@ -155,7 +155,7 @@ STRINGS: dict[str, dict[str, str]] = {
         "menu.minute": "1 minuto",
         "menu.minutes": "{n} minutos",
         # tray
-        "tray.collecting": "Claude Usage: coletando…",
+        "tray.collecting": "Agent Gauge: coletando…",
         "tray.tooltip": ("Claude · 5h {h5:.0f}% (reseta {h5_clock})\n"
                          "7d {d7:.0f}% (reseta {d7_clock})"),
         # time
