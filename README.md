@@ -273,7 +273,7 @@ installer/          packaging           tools/       icon and preview generators
 | `poller.py` | Collection thread, history, burn rate and projection |
 | `theme.py` | Palette, 4pt spacing scale and formatters |
 | `paint.py` | Drawing primitives: ring, meter, chip, shadow, icons |
-| `brand.py` | The Claude Code mascot from the official SVG, embedded as a string |
+| `brand.py` | The app's own gauge mark, plus one mascot per agent, embedded as strings |
 | `i18n.py` | Interface strings, one dictionary per language |
 | `widget.py` | The floating bar |
 | `panel.py` | The expanded panel |
@@ -283,7 +283,7 @@ installer/          packaging           tools/       icon and preview generators
 
 ```powershell
 uv sync                                           # creates the .venv with the dev group
-uv run pytest                                     # 263 tests, no network, no windows
+uv run pytest                                     # 268 tests, no network, no windows
 uv run ruff check .                               # lint (rules in pyproject.toml)
 uv run python tools/preview.py docs/preview.png   # offline render of both surfaces
 $env:AGENT_GAUGE_DEBUG=1; uv run agent-gauge    # prints every cycle to the console

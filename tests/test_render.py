@@ -202,9 +202,9 @@ def test_tray_number_fits_the_small_icon(qapp, real_fonts):
 
 
 def test_clawd_is_cached_per_size_and_color(qapp):
-    first = brand.clawd(13, theme.ACCENT)
-    assert first is brand.clawd(13, theme.ACCENT)
-    assert first is not brand.clawd(13, theme.FAINT)
+    first = brand.mark("claude", 13, theme.ACCENT)
+    assert first is brand.mark("claude", 13, theme.ACCENT)
+    assert first is not brand.mark("claude", 13, theme.FAINT)
     assert not first.isNull()
 
 

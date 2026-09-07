@@ -24,7 +24,9 @@ LATEST_ENDPOINT = f"https://api.github.com/repos/{REPO}/releases/latest"
 # than the release page: it names the file for each platform and says what
 # that platform will object to, where the release page is an undifferentiated
 # list of eight files and leaves the reader to work out which two are theirs.
-DOWNLOAD_URL = "https://lucasmaziero.github.io/agent-gauge/#downloads"
+SITE_URL = "https://lucasmaziero.github.io/agent-gauge/"
+DOWNLOAD_URL = f"{SITE_URL}#downloads"
+SOURCE_URL = f"https://github.com/{REPO}"
 USER_AGENT = f"agent-gauge/{__version__}"
 TIMEOUT = 10
 

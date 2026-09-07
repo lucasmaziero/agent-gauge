@@ -1,4 +1,8 @@
-"""The marks the panel wears, one per agent it can watch.
+"""The marks this app wears: one per agent it can watch, plus its own.
+
+`gauge()` is the app's - the ring, drawn here and shared with the icon
+generator. The two below are the agents' and stand only for whose numbers are
+on screen.
 
 Clawd is Claude Code's own mark, drawn from the official SVG. The Codex slot is
 not OpenAI's logo and must not become it: that is their trademark, and putting
@@ -14,11 +18,11 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from PySide6.QtCore import QByteArray, QRectF, Qt
+from PySide6.QtCore import QByteArray, QPointF, QRectF, Qt
 from PySide6.QtGui import QColor, QPainter, QPixmap
 from PySide6.QtSvg import QSvgRenderer
 
-from . import theme
+from . import paint, theme
 
 # The official Claude Code mark, with the fill parameterized. The two holes in
 # the path (x 6..7.5 and 16.5..18) are its eyes.
@@ -30,7 +34,7 @@ _CLAWD = (
 
 # The official Codex mark, kept verbatim from installer/codex-mark.svg. Used the
 # same way Clawd is: to say whose numbers are on screen. Neither is this
-# project's own mark - the app's is the gauge, in tools/gen_icon.py.
+# project's own mark - the app's is the gauge, in gauge() below.
 _CODEX = (
     "M8.086.457a6.105 6.105 0 013.046-.415c1.333.153 2.521.72 3.564 1.7a.117."
     "117 0 00.107.029c1.408-.346 2.762-.224 4.061.366l.063.03.154.076c1.357.7"
@@ -112,7 +116,43 @@ def mark(key: str, height: int, color: QColor = theme.ACCENT,
     return pm
 
 
-def clawd(height: int, color: QColor = theme.ACCENT, dpr: float = 1.0) -> QPixmap:
-    """Claude Code's mark. Kept as its own name because the icon generator and
-    the widget's badge want that one specifically, not whichever is selected."""
-    return mark("claude", height, color, dpr)
+
+# How far round the gauge goes when it stands for the app rather than a reading.
+# Far enough to read as a measurement, short of the point where the gap closes.
+# The icon generator imports this: the mark on the About card and the mark on
+# the taskbar are the same object, and drifting apart would make the app look
+# like two products.
+ARC_PCT = 72.0
+
+
+def gauge(height: int, color: QColor = theme.ACCENT, dpr: float = 1.0) -> QPixmap:
+    """This project's own mark - the ring, not a mascot.
+
+    Clawd and the Codex mark say whose numbers are on screen. Neither can stand
+    for the app: it watches more than one agent, and wearing one agent's face
+    while showing the other's numbers is a plain untruth. The About card is
+    about Agent Gauge, so it wears the gauge.
+
+    Drawn rather than embedded because it is two arcs, and because
+    tools/gen_icon.py already draws it this way for every icon size - a shared
+    SVG would be a third description of the same shape.
+    """
+    box = float(height)
+    pm = QPixmap(int(box * dpr), int(box * dpr))
+    pm.setDevicePixelRatio(dpr)
+    pm.fill(Qt.GlobalColor.transparent)
+
+    # The stroke is centred on the radius, so half of it falls outside: without
+    # the inset the ring is clipped flat at four points.
+    thickness = max(box * 0.20, 2.0)
+    radius = (box - thickness) / 2
+    center = QPointF(box / 2, box / 2)
+
+    p = QPainter(pm)
+    p.setRenderHint(QPainter.RenderHint.Antialiasing, True)
+    # A ring with a gap and nothing behind it reads as a loading spinner. The
+    # full track is what makes it a gauge - something measured against a whole.
+    paint.ring(p, center, radius, thickness, 100.0, color=theme.BORDER, track=None)
+    paint.ring(p, center, radius, thickness, ARC_PCT, color=color, track=None)
+    p.end()
+    return pm
