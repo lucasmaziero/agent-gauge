@@ -61,7 +61,10 @@ STRINGS: dict[str, dict[str, str]] = {
         # about
         "menu.about": "About",
         "menu.check_updates": "Check for updates",
+        "about.tagline": "Your coding agent's limits, where you can see them.",
         "about.license": "MIT License",
+        "about.source": "Source",
+        "about.site": "Website",
         "about.check": "Check for updates",
         "about.checking": "Checking…",
         "about.current": "This is the latest version",
@@ -145,7 +148,10 @@ STRINGS: dict[str, dict[str, str]] = {
         # sobre
         "menu.about": "Sobre",
         "menu.check_updates": "Verificar atualizações",
+        "about.tagline": "Os limites do seu agente, onde dá para ver.",
         "about.license": "Licença MIT",
+        "about.source": "Código",
+        "about.site": "Site",
         "about.check": "Verificar atualizações",
         "about.checking": "Verificando…",
         "about.current": "Esta é a versão mais recente",

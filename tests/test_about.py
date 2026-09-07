@@ -100,3 +100,50 @@ def test_the_card_wears_the_app_s_own_name(about):
     titles = [label.text() for label in labels]
     assert about_module.APP_NAME.upper() in titles
     assert not any("CLAUDE USAGE" in text for text in titles)
+
+
+def test_the_card_wears_the_app_s_own_mark_not_an_agent_s(about):
+    """It wore Clawd - Claude Code's mascot - on a card about Agent Gauge, so
+    someone watching Codex read their numbers under the other agent's face.
+    The app's mark is the gauge, which is what the icon on their taskbar is."""
+    from agent_gauge import brand, theme
+
+    marks = [label.pixmap() for label in about.findChildren(type(about.status))
+             if not label.pixmap().isNull()]
+    assert len(marks) == 1
+    worn = marks[0].toImage()
+
+    dpr = marks[0].devicePixelRatio()
+    assert worn == brand.gauge(14, theme.ACCENT, dpr).toImage()
+    for key in ("claude", "codex"):
+        assert worn != brand.mark(key, 14, theme.ACCENT, dpr).toImage()
+
+
+def test_the_card_says_what_the_program_is(about):
+    """A bare repository URL asks the reader to already know."""
+    labels = [label.text() for label in about.findChildren(type(about.status))]
+    assert i18n.t("about.tagline") in labels
+
+
+@pytest.mark.parametrize("code", ["en", "pt_BR"])
+def test_both_ways_out_are_offered(about, code):
+    """The site and the source, not just the source: the page names the file
+    for each platform, which is what someone arriving here actually wants."""
+    i18n.set_language(code)
+    card = About()
+    try:
+        body = "".join(label.text()
+                       for label in card.findChildren(type(card.status)))
+        assert release.SITE_URL in body
+        assert release.SOURCE_URL in body
+        assert i18n.t("about.site") in body
+        assert i18n.t("about.source") in body
+    finally:
+        card.close()
+
+
+def test_the_site_and_the_download_page_agree():
+    """The download link is the site plus an anchor; if they ever drift apart
+    the card offers two different homes for one project."""
+    assert release.DOWNLOAD_URL.startswith(release.SITE_URL)
+    assert release.SOURCE_URL.endswith(release.REPO)

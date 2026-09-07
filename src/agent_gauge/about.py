@@ -32,6 +32,13 @@ M = 16                       # transparent margin reserved for the shadow
 APP_NAME = "Agent Gauge"
 AUTHOR = "Lucas Maziero"
 
+# Between the two links. The spaces are hair spaces because a plain "  ·  "
+# collapses to one space in rich text and the dot ends up crowding the word
+# before it. No colour of its own: text between two anchors keeps the label's,
+# so the dot comes out muted and reads as punctuation rather than a third thing
+# to click - measured off the render, not assumed.
+SEP = "&#8202;&#8202;·&#8202;&#8202;"
+
 # What each way of failing is called on screen. Anything unrecognised falls back
 # to the vague one, which is at least not a claim.
 FAILURES = {
@@ -103,7 +110,10 @@ class About(QWidget):
         head = QHBoxLayout()
         head.setSpacing(SM)
         mark = QLabel()
-        mark.setPixmap(brand.clawd(13, theme.ACCENT, self.devicePixelRatioF()))
+        # The gauge, not an agent's mascot. This card is about the app, and the
+        # app watches either agent - it wore Clawd here while showing Codex
+        # numbers, which is the one thing the whole product must not do.
+        mark.setPixmap(brand.gauge(14, theme.ACCENT, self.devicePixelRatioF()))
         head.addWidget(mark)
 
         title = QLabel(APP_NAME.upper(), objectName="title")
@@ -118,9 +128,19 @@ class About(QWidget):
 
         outer.addWidget(self._rule())
 
+        # One line saying what this is, then who and under what licence, then
+        # where to go. A card that carried only a bare repository URL asked the
+        # reader to already know what the program was.
+        tagline = QLabel(t("about.tagline"))
+        tagline.setFont(paint.font(9))
+        tagline.setWordWrap(True)
+        outer.addWidget(tagline)
+
         body = QLabel(
-            f'{AUTHOR}<br>{t("about.license")}<br><br>'
-            + link(f"https://github.com/{release.REPO}", f"github.com/{release.REPO}")
+            f'{AUTHOR} · {t("about.license")}<br><br>'
+            + link(release.SITE_URL, t("about.site"))
+            + SEP
+            + link(release.SOURCE_URL, t("about.source"))
         )
         body.setFont(paint.font(9))
         body.setOpenExternalLinks(True)

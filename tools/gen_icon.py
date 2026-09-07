@@ -1,4 +1,4 @@
-"""Build the application icon from the same Clawd SVG the UI uses.
+"""Build the application icon: the gauge, the app's own mark.
 
 Three platforms want three shapes, so the output format follows the path:
 
@@ -30,13 +30,13 @@ from PySide6.QtCore import QBuffer, QIODevice, QPointF, QRectF, Qt
 from PySide6.QtGui import QColor, QImage, QPainter, QPainterPath
 from PySide6.QtWidgets import QApplication
 
-from agent_gauge import paint, theme
+from agent_gauge import brand, paint, theme
 
 # Sizes Windows actually asks for: tray, taskbar, list views, tiles.
 SIZES = (16, 20, 24, 32, 40, 48, 64, 128, 256)
 PNG_FROM = 64          # below this Windows is happiest with a plain DIB
 PLATE_FROM = 24        # below this the plate is dropped; see render()
-ARC_PCT = 72.0         # far enough round to read as a measurement
+ARC_PCT = brand.ARC_PCT   # the same sweep the About card wears, from one place
 
 # What iconutil reads. The @2x entries are a larger render under a smaller
 # name, which is exactly what a Retina display asks for.

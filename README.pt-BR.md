@@ -272,7 +272,7 @@ installer/          empacotamento       tools/       geradores de ícone e previ
 | `poller.py` | Thread de coleta, histórico, burn rate e projeção |
 | `theme.py` | Paleta, escala de espaçamento de 4pt e formatadores |
 | `paint.py` | Primitivas de desenho: anel, medidor, chip, sombra, ícones |
-| `brand.py` | Mascote do Claude Code a partir do SVG oficial, embutido como string |
+| `brand.py` | A marca própria do app e um mascote por agente, embutidos como strings |
 | `i18n.py` | Strings da interface, um dicionário por idioma |
 | `widget.py` | Barra flutuante |
 | `panel.py` | Painel expandido |
@@ -282,7 +282,7 @@ installer/          empacotamento       tools/       geradores de ícone e previ
 
 ```powershell
 uv sync                                           # cria o .venv com o grupo de dev
-uv run pytest                                     # 263 testes, sem rede e sem janela
+uv run pytest                                     # 268 testes, sem rede e sem janela
 uv run ruff check .                               # lint (regras em pyproject.toml)
 uv run python tools/preview.py docs/preview.png   # render offline das duas telas
 $env:AGENT_GAUGE_DEBUG=1; uv run agent-gauge    # imprime cada ciclo no console
