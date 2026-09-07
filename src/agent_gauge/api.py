@@ -8,12 +8,12 @@ purely to read them.
 from __future__ import annotations
 
 import json
-import ssl
 import time
 import urllib.error
 import urllib.request
 from dataclasses import dataclass, field
 
+from . import net
 from .i18n import t
 
 MESSAGES_ENDPOINT = "https://api.anthropic.com/v1/messages"
@@ -118,8 +118,7 @@ def _probe(req) -> tuple:
     network-level exceptions escape, for the caller to retry.
     """
     try:
-        ctx = ssl.create_default_context()
-        with urllib.request.urlopen(req, timeout=TIMEOUT, context=ctx) as resp:
+        with urllib.request.urlopen(req, timeout=TIMEOUT, context=net.context()) as resp:
             headers, code = resp.headers, resp.status
             resp.read()
     except urllib.error.HTTPError as exc:
@@ -167,7 +166,7 @@ def fetch_incidents() -> list[str]:
     """Open incident titles from status.claude.com; empty list means all clear."""
     req = urllib.request.Request(STATUS_ENDPOINT, headers={"User-Agent": USER_AGENT})
     try:
-        with urllib.request.urlopen(req, timeout=TIMEOUT) as resp:
+        with urllib.request.urlopen(req, timeout=TIMEOUT, context=net.context()) as resp:
             data = json.loads(resp.read().decode("utf-8", "replace"))
     except (urllib.error.URLError, OSError, json.JSONDecodeError):
         return []

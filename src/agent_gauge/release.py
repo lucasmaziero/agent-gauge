@@ -16,7 +16,7 @@ import urllib.error
 import urllib.request
 from typing import NamedTuple
 
-from . import __version__, diag
+from . import __version__, diag, net
 
 REPO = "lucasmaziero/agent-gauge"
 LATEST_ENDPOINT = f"https://api.github.com/repos/{REPO}/releases/latest"
@@ -99,7 +99,8 @@ def fetch_latest() -> Latest:
         headers={"User-Agent": USER_AGENT, "Accept": "application/vnd.github+json"},
     )
     try:
-        with urllib.request.urlopen(request, timeout=TIMEOUT) as response:
+        with urllib.request.urlopen(request, timeout=TIMEOUT,
+                                    context=net.context()) as response:
             data = json.loads(response.read().decode("utf-8", "replace"))
     except urllib.error.HTTPError as exc:
         remaining = exc.headers.get("X-RateLimit-Remaining") if exc.headers else None

@@ -67,7 +67,7 @@ class _Response:
 
 def answer(monkeypatch, payload):
     monkeypatch.setattr(urllib.request, "urlopen",
-                        lambda request, timeout=None: _Response(payload))
+                        lambda request, timeout=None, **kwargs: _Response(payload))
 
 
 @pytest.fixture
@@ -176,7 +176,7 @@ def test_a_reply_without_windows_is_a_failure(monkeypatch, codex_home):
 def test_a_refusal_is_reported_as_one(monkeypatch, codex_home):
     write_auth(codex_home)
 
-    def refuse(request, timeout=None):
+    def refuse(request, timeout=None, **kwargs):
         raise urllib.error.HTTPError(request.full_url, 401, "Unauthorized", {}, None)
     monkeypatch.setattr(urllib.request, "urlopen", refuse)
 
@@ -189,7 +189,7 @@ def test_the_request_carries_the_account(monkeypatch, codex_home):
     write_auth(codex_home, account="acc-42")
     seen = {}
 
-    def capture(request, timeout=None):
+    def capture(request, timeout=None, **kwargs):
         seen.update(request.headers)
         return _Response(USAGE)
     monkeypatch.setattr(urllib.request, "urlopen", capture)
@@ -203,7 +203,7 @@ def test_a_dropped_connection_is_retried(monkeypatch, codex_home):
     write_auth(codex_home)
     attempts = []
 
-    def flaky(request, timeout=None):
+    def flaky(request, timeout=None, **kwargs):
         attempts.append(1)
         if len(attempts) == 1:
             raise urllib.error.URLError("reset")

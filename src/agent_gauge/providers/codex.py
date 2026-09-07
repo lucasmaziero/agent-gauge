@@ -27,6 +27,7 @@ import urllib.error
 import urllib.request
 from pathlib import Path
 
+from .. import net
 from ..api import Usage
 from ..credentials import Credentials, CredentialsError
 from ..i18n import t
@@ -105,7 +106,8 @@ class Codex(Provider):
         request = urllib.request.Request(
             STATUS_ENDPOINT, headers={"User-Agent": "agent-gauge"})
         try:
-            with urllib.request.urlopen(request, timeout=TIMEOUT) as response:
+            with urllib.request.urlopen(request, timeout=TIMEOUT,
+                                        context=net.context()) as response:
                 status = json.loads(
                     response.read().decode("utf-8", "replace")).get("status") or {}
         except (urllib.error.URLError, OSError, json.JSONDecodeError, AttributeError):
@@ -176,7 +178,8 @@ class Codex(Provider):
         return Usage(ok=False, error=t("error.network", reason=reason))
 
     def _read(self, request) -> Usage:
-        with urllib.request.urlopen(request, timeout=TIMEOUT) as response:
+        with urllib.request.urlopen(request, timeout=TIMEOUT,
+                                    context=net.context()) as response:
             data = json.loads(response.read().decode("utf-8", "replace"))
 
         limits = data.get("rate_limit") or {}

@@ -1,3 +1,3 @@
 """Floating desktop widget for Claude Code rate-limit usage."""
 
-__version__ = "2.0.2"
+__version__ = "2.0.3"

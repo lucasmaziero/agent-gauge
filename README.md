@@ -265,6 +265,7 @@ installer/          packaging           tools/       icon and preview generators
 | `providers/` | One `Provider` per agent: credentials, fetch, incidents, token totals |
 | `signin.py` | Tells the two no-token dead ends apart and opens the setup page |
 | `diag.py` | A bounded log of failed cycles, written only when one fails |
+| `net.py` | The one TLS context every HTTPS call uses, verified by the OS |
 | `release.py` | Reads the latest published tag and compares it with this build |
 | `about.py` | Version, author and the update check, as a card |
 | `api.py` | Usage and incidents; `parse()` split out so the contract tests without a network |
@@ -282,7 +283,7 @@ installer/          packaging           tools/       icon and preview generators
 
 ```powershell
 uv sync                                           # creates the .venv with the dev group
-uv run pytest                                     # 240 tests, no network, no windows
+uv run pytest                                     # 263 tests, no network, no windows
 uv run ruff check .                               # lint (rules in pyproject.toml)
 uv run python tools/preview.py docs/preview.png   # offline render of both surfaces
 $env:AGENT_GAUGE_DEBUG=1; uv run agent-gauge    # prints every cycle to the console
@@ -415,6 +416,17 @@ Things that cost time and that the code alone does not explain:
 - **Clicking the widget while the panel is open arrives in two parts.** The `Qt.Popup` closes itself
   on the outside click and the widget receives that same click next; without a guard the panel
   closed and reopened in one gesture. `Panel.just_closed()` swallows the second event for 250 ms.
+- **HTTPS trust goes through the operating system, not OpenSSL's own store.** Windows keeps a small
+  set of root certificates on disk and fetches the rest on demand through CryptoAPI, which is why a
+  browser opens a site that Python, verifying with OpenSSL, rejects as "unable to get local issuer
+  certificate". That is not hypothetical: it was reported from a machine where the gauge read
+  Anthropic fine, the browser opened `api.github.com` fine, and the update check inside the same app
+  could not. `net.context()` hands verification to the OS, so the answer matches what everything
+  else on that machine believes, including a corporate proxy's own CA - and every HTTPS call in the
+  app goes through it. Before, one of five passed a context and four did not, which is why the
+  difference stayed invisible for so long. Where the OS layer is unavailable the older verifier
+  still runs - refusing to connect would be worse - but that fallback writes a line to `errors.log`,
+  because a fix that quietly turns itself off is indistinguishable from no fix at all.
 - **A failure that happens at 3am used to leave nothing behind.** The message sat on screen until
   the next cycle overwrote it, so by the time anyone looked the app had recovered and the evidence
   was gone. `errors.log` now keeps the last two hundred failed cycles with the context that tells
