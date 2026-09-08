@@ -30,11 +30,13 @@ DIVIDER_Y = 228
 STRIP_Y = 236
 INCIDENT_Y = 260
 REFRESH_W = 76
+STATUS_ARROW = "  →"      # what marks the status line as a link
 
 
 class Panel(QWidget):
     refresh_requested = Signal()
     setup_requested = Signal()          # the way out when there is no token
+    status_requested = Signal()         # open the agent's own status page
 
     def __init__(self, settings) -> None:
         super().__init__(None)
@@ -43,6 +45,7 @@ class Panel(QWidget):
         self.projection = ""
         self._hover_refresh = False
         self._hover_setup = False
+        self._hover_status = False
         self._hidden_at = 0.0
 
         self.setWindowFlags(
@@ -100,6 +103,41 @@ class Panel(QWidget):
         if self.snap.setup == signin.INSTALL:
             return t("panel.get_agent", agent=provider.label) + "  →"
         return t("panel.how_signin") + "  →"
+
+    def _status_line(self) -> str:
+        """The incident line, or "" when the line is not about the status page.
+
+        An app-side failure - a refused token, a dead network - lands in the
+        same slot but is not something the status page answers, so it is not
+        offered as a link.
+        """
+        snap = self.snap
+        if snap and snap.error:
+            return ""
+        # The arrow is the only thing saying the line can be clicked - the same
+        # mark the setup link uses. Without it a link nobody hovers is a link
+        # nobody has. The incident is elided to what is left after it, not to
+        # the full column, or the arrow is what gets cut.
+        arrow, _ = paint.ink(STATUS_ARROW, 8)
+        if snap and snap.incidents:
+            return paint.elide("! " + snap.incidents[0], COL - arrow, 8) + STATUS_ARROW
+        return t("panel.no_incidents", host=self._status_host()) + STATUS_ARROW
+
+    def _status_host(self) -> str:
+        provider = providers.get(
+            (self.snap.provider if self.snap else "") or str(self.settings["provider"]))
+        return provider.status_host
+
+    def _status_zone(self) -> QRectF:
+        """Hit area of the status line, measured off the text rather than the
+        column: the incident is elided to fit and the "no incidents" line is
+        shorter still, so a full-width zone would put the hand cursor over a
+        stretch of empty card."""
+        label = self._status_line()
+        if not label:
+            return QRectF()
+        width, _ = paint.ink(label, 8)
+        return QRectF(M + PAD, M + INCIDENT_Y, min(width + 6, COL), 18)
 
     def _setup_zone(self) -> QRectF:
         """Hit area of the setup link, measured rather than fixed: it shares the
@@ -218,11 +256,15 @@ class Panel(QWidget):
         if snap and snap.error:
             paint.text(p, line, paint.elide(snap.error, COL, 8),
                        theme.MUTED if snap.waiting else theme.BAD, 8)
-        elif snap and snap.incidents:
-            paint.text(p, line, paint.elide("! " + snap.incidents[0], COL, 8), theme.WARN, 8)
         else:
-            host = providers.get(str(self.settings["provider"])).status_host
-            paint.text(p, line, t("panel.no_incidents", host=host), theme.FAINT, 8)
+            # Painted from the same string the hit area is measured from. Two
+            # sources for one line is how a zone drifts off the text it covers.
+            text = self._status_line()
+            if snap and snap.incidents:
+                colour = theme.ACCENT if self._hover_status else theme.WARN
+            else:
+                colour = theme.ACCENT if self._hover_status else theme.FAINT
+            paint.text(p, line, text, colour, 8)
 
     def _footer(self, p: QPainter, snap: Snapshot | None, right) -> None:
         foot = QRectF(PAD, H - PAD - 20, COL, 20)
@@ -258,9 +300,13 @@ class Panel(QWidget):
         where = event.position()
         refresh = self._refresh_zone().contains(where)
         setup = self._setup_zone().contains(where)
-        if refresh != self._hover_refresh or setup != self._hover_setup:
+        status = self._status_zone().contains(where)
+        if (refresh != self._hover_refresh or setup != self._hover_setup
+                or status != self._hover_status):
             self._hover_refresh, self._hover_setup = refresh, setup
-            self.setCursor(Qt.CursorShape.PointingHandCursor if refresh or setup
+            self._hover_status = status
+            self.setCursor(Qt.CursorShape.PointingHandCursor
+                           if refresh or setup or status
                            else Qt.CursorShape.ArrowCursor)
             self.update()
 
@@ -272,3 +318,5 @@ class Panel(QWidget):
             self.refresh_requested.emit()
         elif self._setup_zone().contains(where):
             self.setup_requested.emit()
+        elif self._status_zone().contains(where):
+            self.status_requested.emit()

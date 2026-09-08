@@ -157,7 +157,17 @@ painel, ou use o botão direito em qualquer lugar para o menu.
 **Painel.** A janela de 5h é o que morde primeiro, então fica num cartão com número grande e
 medidor de 18 segmentos; a de 7 dias é apoio e vive solta sobre a superfície, com barra contínua.
 Abaixo de um fio divisor vêm os metadados: chip de status (`OK` / `ATENÇÃO` / `BLOQUEADO`), tokens
-reais da janela, incidentes abertos em `status.claude.com` e o carimbo da última coleta.
+reais da janela, incidentes abertos na página de status do agente monitorado e o carimbo da última
+coleta.
+
+Essa linha de incidente é um link, marcado com a mesma seta do link de setup, e abre o
+`status.claude.com` ou o `status.openai.com` conforme o agente na tela — o endereço é montado a
+partir do host que a própria linha acabou de nomear, então para onde ele vai e o que ele diz não
+podem divergir. Ele merece o link por não conseguir terminar a própria frase: o título do incidente
+é cortado para caber numa coluna de 280px, então a linha nomeia um problema que não tem espaço para
+descrever. Falha do lado do app cai no mesmo lugar e de propósito não vira link — token recusado
+não é coisa que página de status responda, e mandar alguém para lá seria resposta errada vestida de
+ajuda.
 
 O mascote do cabeçalho acinzenta quando há erro de coleta ou incidente aberto, o mesmo sinal que o
 selo do widget dá.
@@ -282,7 +292,7 @@ installer/          empacotamento       tools/       geradores de ícone e previ
 
 ```powershell
 uv sync                                           # cria o .venv com o grupo de dev
-uv run pytest                                     # 268 testes, sem rede e sem janela
+uv run pytest                                     # 276 testes, sem rede e sem janela
 uv run ruff check .                               # lint (regras em pyproject.toml)
 uv run python tools/preview.py docs/preview.png   # render offline das duas telas
 $env:AGENT_GAUGE_DEBUG=1; uv run agent-gauge    # imprime cada ciclo no console
@@ -461,6 +471,13 @@ Coisas que custaram tempo e que o código sozinho não explica:
   Refresh tokens costumam ser de uso único com rotação, então um widget que gastasse um poderia
   deixar o Claude Code com um token inválido e te deslogar dele — jeito desproporcional de perder
   uma leitura de medidor.
+- **Trocar de agente carregava o incidente do outro junto.** Os incidentes vêm da página de status
+  de cada agente e ficam em cache por cinco minutos, porque mudam devagar. A troca limpava o
+  histórico e a linha de base da taxa de queima, mas não esse cache — então sair do Codex deixava o
+  painel relatando o incidente da OpenAI sob o nome do Claude, ao lado de números que eram todos da
+  Anthropic: uma linha de status contradizendo todos os valores em volta. Agora o cache e o relógio
+  dele são limpos juntos; limpar só o primeiro deixaria o painel mudo pelo resto dos cinco minutos,
+  e "sem incidentes" é uma afirmação, não uma ausência.
 - **A taxa de queima morria por horas depois de cada reset de janela.** O deque de amostras era
   limitado por quantidade, não por tempo, então as leituras da janela anterior continuavam nele; o
   `burn_rate()` via a porcentagem cair, tomava aquilo por reset e devolvia zero até elas saírem pela

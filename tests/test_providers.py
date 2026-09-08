@@ -385,3 +385,44 @@ def test_a_claim_is_only_made_when_a_limit_was_reached(
     write_auth(codex_home)
     answer(monkeypatch, {**USAGE, "rate_limit_reached_type": reached})
     assert CODEX.fetch(CODEX.credentials()).claim == expected
+
+
+def test_the_other_agent_s_incidents_do_not_survive_a_switch(tmp_path):
+    """Incidents come from each agent's own status page and are cached for five
+    minutes, because they move slowly. Across a switch that cache went on
+    reporting OpenAI's outage under Claude's name, beside numbers that were
+    Anthropic's - a status line contradicting every figure next to it."""
+    from agent_gauge.poller import Poller
+
+    poll = Poller(120, CODEX)
+    poll._incidents = ["Elevated errors on the ChatGPT API"]
+    poll._last_status = time.time()          # fresh: no refresh due for 5 min
+
+    poll.set_provider(CLAUDE)
+    poll._apply_pending()
+
+    assert poll._incidents == []
+    assert poll._last_status == 0.0          # so the next cycle actually asks
+
+
+def test_the_switched_in_agent_gets_its_own_incidents(monkeypatch, tmp_path):
+    """Clearing alone would leave the panel silent for the rest of the five
+    minutes, which reads as "no incidents" - a claim, not an absence."""
+    from agent_gauge.poller import Poller
+
+    monkeypatch.setattr(CLAUDE, "credentials",
+                        lambda: credentials.Credentials("t", 0, "", ""), raising=False)
+    monkeypatch.setattr(CLAUDE, "fetch",
+                        lambda _c: api.Usage(h5=5, h5_reset=int(time.time() + 3600), ok=True),
+                        raising=False)
+    monkeypatch.setattr(CLAUDE, "incidents",
+                        lambda: ["Anthropic: elevated error rates"], raising=False)
+
+    poll = Poller(120, CODEX)
+    poll._incidents = ["OpenAI: something else"]
+    poll._last_status = time.time()
+
+    poll.set_provider(CLAUDE)
+    snap = poll._collect()
+
+    assert snap.incidents == ["Anthropic: elevated error rates"]

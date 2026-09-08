@@ -158,8 +158,16 @@ panel, or right-click anywhere for the menu.
 **Panel.** The 5-hour window is what bites first, so it gets a card with the big number and an
 eighteen-segment meter; the 7-day window is supporting information and sits directly on the surface
 with a continuous bar. Below a hairline come the metadata: status chip (`OK` / `WARNING` /
-`BLOCKED`), real token counts for the window, open incidents from `status.claude.com`, and the
-timestamp of the last fetch.
+`BLOCKED`), real token counts for the window, open incidents from the watched agent's own status
+page, and the timestamp of the last fetch.
+
+That incident line is a link, marked with the same arrow the setup link uses, and it opens
+`status.claude.com` or `status.openai.com` depending on which agent is on screen - the address is
+built from the host the line just named, so where it goes and what it says cannot disagree. It
+earns the link by being unable to finish its own sentence: the incident title is elided to fit a
+280px column, so the line names a problem it has no room to describe. An app-side failure lands in
+the same slot and is deliberately not a link - a refused token is not something a status page
+answers, and sending someone there would be a wrong answer wearing the shape of help.
 
 The mascot in the header goes gray on a fetch error or an open incident, the same signal the
 widget's badge gives.
@@ -283,7 +291,7 @@ installer/          packaging           tools/       icon and preview generators
 
 ```powershell
 uv sync                                           # creates the .venv with the dev group
-uv run pytest                                     # 268 tests, no network, no windows
+uv run pytest                                     # 276 tests, no network, no windows
 uv run ruff check .                               # lint (rules in pyproject.toml)
 uv run python tools/preview.py docs/preview.png   # offline render of both surfaces
 $env:AGENT_GAUGE_DEBUG=1; uv run agent-gauge    # prints every cycle to the console
@@ -458,6 +466,13 @@ Things that cost time and that the code alone does not explain:
   would work. Refresh tokens are commonly single-use with rotation, so a widget that spent one
   could leave Claude Code holding an invalid token and log you out of it - a disproportionate way
   to lose a gauge reading.
+- **Switching agents used to carry the other one's outage across.** Incidents come from each
+  agent's own status page and are cached for five minutes, because they move slowly. The switch
+  cleared the history and the burn-rate baseline but not that cache, so leaving Codex left the
+  panel reporting OpenAI's incident under Claude's name, beside numbers that were all Anthropic's -
+  a status line contradicting every figure next to it. The cache and its clock are now cleared
+  together: clearing only the first would leave the panel silent for the rest of the five minutes,
+  and "no incidents" is a claim, not an absence.
 - **The burn rate used to die for hours after every window reset.** The sample deque was bounded
   by count, not by time, so the readings from the previous window stayed in it; `burn_rate()` saw
   the percentage fall, took that for a reset, and returned zero until they aged out - up to six
