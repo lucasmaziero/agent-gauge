@@ -161,6 +161,15 @@ class Poller(QThread):
 
         The history goes with the old agent: a burn rate computed across two
         agents' windows would be a fiction, not a mix.
+
+        So do the incidents, and for the same reason. They are read from each
+        agent's own status page - status.claude.com or status.openai.com - and
+        cached for five minutes, because incidents move slowly. Left alone
+        across a switch, that cache kept serving the previous agent's outages
+        under the new agent's name: switch away from Codex and the panel went
+        on reporting OpenAI's incident while every number on it was Anthropic's.
+        Clearing the clock too is what makes the next cycle ask, rather than
+        showing nothing for the rest of the five minutes.
         """
         if self._pending is None:
             return
@@ -169,6 +178,8 @@ class Poller(QThread):
         self._save_history()
         self._last_h5 = None
         self._idle = 0
+        self._incidents = []
+        self._last_status = 0.0
 
     def _collect(self) -> Snapshot:
         self._apply_pending()

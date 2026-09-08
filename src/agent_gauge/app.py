@@ -174,6 +174,8 @@ class App(QObject):
         self.panel.refresh_requested.connect(self.refresh)
         self.panel.setup_requested.connect(
             lambda: signin.open_help(self.provider))
+        self.panel.status_requested.connect(
+            lambda: signin.open_status(self.provider))
         self.poller.updated.connect(self.on_update)
         self.poller.busy.connect(self.widget.set_busy)
 

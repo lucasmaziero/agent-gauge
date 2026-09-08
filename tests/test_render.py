@@ -246,3 +246,99 @@ def test_elide_leaves_a_single_token_alone(qapp, real_fonts):
 
 def test_elide_returns_short_text_untouched(qapp, real_fonts):
     assert paint.elide("OK", 200, 9) == "OK"
+
+
+# ------------------------------------------------------- the status page link
+def _click(widget, where):
+    event = QMouseEvent(QEvent.Type.MouseButtonRelease, where,
+                        QPointF(widget.mapToGlobal(where.toPoint())),
+                        Qt.MouseButton.LeftButton, Qt.MouseButton.LeftButton,
+                        Qt.KeyboardModifier.NoModifier)
+    widget.mouseReleaseEvent(event)
+
+
+def test_the_status_line_opens_the_status_page(qapp, settings):
+    """The incident is elided to fit a 280px column, so the one thing the line
+    cannot do is tell the whole story. The link is where the rest of it is."""
+    p = Panel(settings)
+    p.set_snapshot(live_snapshot(), "~1h40")
+
+    fired = []
+    p.status_requested.connect(lambda: fired.append(True))
+    _click(p, p._status_zone().center())
+    assert fired
+
+
+def test_an_app_side_error_is_not_offered_as_a_status_link(qapp, settings):
+    """A refused token and a dead network land in the same slot, and neither is
+    something status.claude.com answers. Sending someone there would be a
+    wrong answer wearing the shape of help."""
+    p = Panel(settings)
+    p.set_snapshot(error_snapshot(), "")
+    assert p._status_zone().isEmpty()
+
+    fired = []
+    p.status_requested.connect(lambda: fired.append(True))
+    _click(p, QPointF(p.width() / 2, p.height() / 2))
+    assert not fired
+
+
+def test_the_link_zone_covers_the_text_it_names(qapp, settings):
+    """Measured off the painted string: a full-width zone would put the hand
+    cursor over empty card, and a stale one would miss the text entirely."""
+    p = Panel(settings)
+    p.set_snapshot(live_snapshot(), "~1h40")
+    zone = p._status_zone()
+    width, _ = paint.ink(p._status_line(), 8)
+    assert zone.width() <= width + 6
+    assert zone.height() > 0
+
+
+def test_the_link_follows_the_agent_on_screen(qapp, settings):
+    """It is built from the host the line just named, so the address opened and
+    the address shown cannot disagree."""
+    from agent_gauge import providers
+
+    p = Panel(settings)
+    for key in ("claude", "codex"):
+        snap = live_snapshot()
+        snap.provider = key
+        p.set_snapshot(snap, "")
+        assert p._status_host() == providers.get(key).status_host
+        assert providers.get(key).status_host in p._status_line()
+
+
+def test_an_open_incident_is_the_link_that_matters_most(qapp, settings):
+    """The case the link was asked for: the incident text is cut to fit, so the
+    line names a problem it cannot describe."""
+    snap = live_snapshot()
+    snap.incidents = ["Elevated error rates on the Messages API affecting a "
+                      "subset of requests in us-east"]
+    p = Panel(settings)
+    p.set_snapshot(snap, "~1h40")
+
+    assert p._status_line().startswith("! ")
+    assert not p._status_zone().isEmpty()
+
+    fired = []
+    p.status_requested.connect(lambda: fired.append(True))
+    _click(p, p._status_zone().center())
+    assert fired
+
+
+def test_a_long_incident_keeps_the_arrow(qapp, settings):
+    """Eliding to the full column and then appending would push the arrow off
+    the card - dropping the only mark that says the line can be clicked, in
+    exactly the case where clicking it matters most."""
+    from agent_gauge.panel import COL, STATUS_ARROW
+
+    snap = live_snapshot()
+    snap.incidents = ["Elevated error rates affecting a subset of requests "
+                      "across several regions, with degraded latency " * 3]
+    p = Panel(settings)
+    p.set_snapshot(snap, "~1h40")
+
+    line = p._status_line()
+    assert line.endswith(STATUS_ARROW)
+    width, _ = paint.ink(line, 8)
+    assert width <= COL, f"{width} > {COL}: the line overflows the card"

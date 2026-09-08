@@ -32,3 +32,14 @@ def needed(provider) -> str:
 def open_help(provider) -> None:
     """Hand the agent's setup page to the user's browser."""
     QDesktopServices.openUrl(QUrl(provider.help_url))
+
+
+def open_status(provider) -> None:
+    """Hand the agent's status page to the user's browser.
+
+    Built from status_host rather than a URL of its own, so the address opened
+    is the one the panel just named. A separate constant could disagree with
+    the label, and a link that goes somewhere other than where it says is worse
+    than no link.
+    """
+    QDesktopServices.openUrl(QUrl(f"https://{provider.status_host}"))
