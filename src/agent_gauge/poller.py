@@ -162,14 +162,10 @@ class Poller(QThread):
         The history goes with the old agent: a burn rate computed across two
         agents' windows would be a fiction, not a mix.
 
-        So do the incidents, and for the same reason. They are read from each
-        agent's own status page - status.claude.com or status.openai.com - and
-        cached for five minutes, because incidents move slowly. Left alone
-        across a switch, that cache kept serving the previous agent's outages
-        under the new agent's name: switch away from Codex and the panel went
-        on reporting OpenAI's incident while every number on it was Anthropic's.
-        Clearing the clock too is what makes the next cycle ask, rather than
-        showing nothing for the rest of the five minutes.
+        So do the incidents: they come from each agent's own status page and
+        are cached for five minutes, so left alone they reported OpenAI's
+        outage beside Anthropic's numbers. The clock is cleared with them, or
+        the next cycle would not ask for the rest of those five minutes.
         """
         if self._pending is None:
             return

@@ -1,20 +1,11 @@
 """The marks this app wears: one per agent it can watch, plus its own.
 
-`gauge()` is the app's - the ring, drawn here and shared with the icon
-generator. The two below are the agents' and stand only for whose numbers are
-on screen.
+Each agent's mark carries its own colour and its own size correction, because
+the header's whole job is saying the two apart. Grey overrides both when the
+agent is unwell: an indicator outranks a logo.
 
-Both are the agents' official marks, drawn from their own SVGs, and each wears
-its own colour: Anthropic's coral, and the blue-violet gradient OpenAI gives
-Codex. They used to share the theme accent, which made the two agents look
-alike in the one place whose entire job is saying them apart - a Codex user
-glancing at the header saw Claude's colour over Codex's numbers.
-
-The colour gives way to grey when the agent is unwell, because that signal
-matters more than the branding: a mark that stayed on-brand through an outage
-would be a logo, not an indicator.
-
-Both are embedded as strings so there is no data file for PyInstaller to miss.
+`gauge()` is the app's own mark. Paths are embedded as strings so there is no
+data file for PyInstaller to miss.
 """
 from __future__ import annotations
 
@@ -34,9 +25,7 @@ _CLAWD = (
     "488V8.102H6v2.847zm10.51 0H18V8.102h-1.49v2.847z"
 )
 
-# The official Codex mark, kept verbatim from installer/codex-mark.svg. Used the
-# same way Clawd is: to say whose numbers are on screen. Neither is this
-# project's own mark - the app's is the gauge, in gauge() below.
+# Kept verbatim from installer/codex-mark.svg.
 _CODEX = (
     "M8.086.457a6.105 6.105 0 013.046-.415c1.333.153 2.521.72 3.564 1.7a.117."
     "117 0 00.107.029c1.408-.346 2.762-.224 4.061.366l.063.03.154.076c1.357.7"
@@ -74,61 +63,42 @@ _STOP = '<stop offset="{at}" stop-color="{color}"/>'
 class Mark:
     """One agent's mark, and how much of the viewBox its ink actually fills.
 
-    The height matters because the two differ: Clawd is drawn in the y 5..20
-    band and the Codex mark fills the whole 24, both measured rather than read
-    off the file. Sizing every mark as though it filled the box would have made
-    Clawd two thirds the height it was asked for; sizing them all as though they
-    were Clawd would have made Codex half again too big.
+    The two differ - Clawd draws in the y 5..20 band, Codex fills all 24 - so
+    each carries its own, measured rather than read off the file. One shared
+    number would make one of them half again too big.
     """
 
     path: str
     ink_height: float
-    # The mark's own colour: one value, or the stops of a vertical gradient as
-    # (offset, colour). Used whenever the caller does not force a flat tint.
-    ink: str | tuple[tuple[float, str], ...] = theme.ACCENT.name()
-    # One solid colour standing for this agent in text beside the mark. A
-    # gradient cannot letter a word, so this is picked, not derived.
-    tint: str = theme.ACCENT.name()
-    # Correction for how big the mark *looks* rather than how tall it is. See
-    # `mark()`: matching height alone leaves a compact shape reading small.
-    optical: float = 1.0
+    ink: str | tuple[tuple[float, str], ...] = theme.ACCENT.name()   # flat, or gradient stops
+    tint: str = theme.ACCENT.name()      # one solid colour, for text beside the mark
+    optical: float = 1.0                 # how big it *looks*, not how tall it is
 
 
+# The tint is the ramp's middle stop: the solid blue at its foot measures 2.8:1
+# against the panel, unreadable as small caps, where this one measures 6.7:1.
+# The 1.15 is optical - at the same asked height Clawd is 20.8pt wide and Codex
+# a 13pt square, two thirds the ink. Parity would need 1.25, which makes Codex
+# the taller mark and overcorrects.
 MARKS = {
     "claude": Mark(_CLAWD, 15.0, theme.ACCENT.name(), theme.ACCENT.name()),
-    # OpenAI's own ramp for Codex, top to bottom, taken from the official SVG.
-    # The tint is the middle stop, not the solid blue at the foot of it: that
-    # one measures 2.8:1 against the panel and is unreadable as small caps,
-    # where this one measures 6.7:1 - better than the coral it replaces.
-    # Drawn 15% over its asked height. Matching height alone left it reading
-    # small beside Clawd: at 13pt both are 13pt tall, but Clawd is 20.8pt wide
-    # and Codex 13pt square - 123 square points of ink against 192, two thirds
-    # the visual mass. Full parity would need 1.25, and that makes Codex the
-    # taller mark, which overcorrects into looking bigger. Measured, then
-    # chosen by looking at the two side by side.
     "codex": Mark(_CODEX, 24.0,
                   ((0.0, "#B1A7FF"), (0.5, "#7A9DFF"), (1.0, "#3941FF")),
                   "#7A9DFF", 1.15),
 }
+FALLBACK = "claude"
+
+_VIEWBOX = 24.0
+_cache: dict[tuple[str, int, str, float], QPixmap] = {}
 
 
 def tint(key: str) -> QColor:
     """The agent's one solid colour, for text that sits beside its mark."""
     return QColor(MARKS.get(key, MARKS[FALLBACK]).tint)
-FALLBACK = "claude"
-
-_VIEWBOX = 24.0
-
-_cache: dict[tuple[str, int, str, float], QPixmap] = {}
 
 
 def _fill(chosen: Mark, color: QColor | None) -> tuple[str, str]:
-    """How to paint this mark: the `fill` attribute, and any `<defs>` it needs.
-
-    A colour forces a flat tint - that is the grey an unwell agent wears, and it
-    has to beat the branding. Without one the mark uses its own ink, which for
-    Codex is a gradient and so needs a definition alongside it.
-    """
+    """The `fill` attribute for this mark, and any `<defs>` it needs."""
     if color is not None:
         return color.name(), ""
     if isinstance(chosen.ink, str):
@@ -141,15 +111,12 @@ def _fill(chosen: Mark, color: QColor | None) -> tuple[str, str]:
 
 def mark(key: str, height: int, color: QColor | None = None,
          dpr: float = 1.0) -> QPixmap:
-    """The named agent's mark, `height` pixels tall, measured on the drawn band.
+    """The named agent's mark, measured on its drawn band, not its viewBox.
 
-    `color` forces a flat tint and is how an unwell agent goes grey. Left out,
-    the mark wears its own colour - which is the point of having two.
-
-    The pixmap comes out taller than requested because the viewBox has empty
-    rows above and below; that transparent slack is what centers the mascot on a
-    text line. Pass the window's devicePixelRatioF so it stays crisp when
-    Windows scaling is above 100%.
+    `color` forces a flat tint - the grey an unwell agent wears. Left out, the
+    mark keeps its own. The pixmap comes out taller than asked because the
+    viewBox has empty rows above and below, and that slack is what centres the
+    mark on a text line. Pass devicePixelRatioF to stay crisp above 100%.
     """
     cache_key = (key, height, color.name() if color is not None else "own", dpr)
     if cache_key in _cache:
@@ -173,26 +140,17 @@ def mark(key: str, height: int, color: QColor | None = None,
     return pm
 
 
-
-# How far round the gauge goes when it stands for the app rather than a reading.
-# Far enough to read as a measurement, short of the point where the gap closes.
-# The icon generator imports this: the mark on the About card and the mark on
-# the taskbar are the same object, and drifting apart would make the app look
-# like two products.
+# Far enough round to read as a measurement, short of the gap closing. The icon
+# generator imports it so the About card and the taskbar cannot drift apart.
 ARC_PCT = 72.0
 
 
 def gauge(height: int, color: QColor = theme.ACCENT, dpr: float = 1.0) -> QPixmap:
     """This project's own mark - the ring, not a mascot.
 
-    Clawd and the Codex mark say whose numbers are on screen. Neither can stand
-    for the app: it watches more than one agent, and wearing one agent's face
-    while showing the other's numbers is a plain untruth. The About card is
-    about Agent Gauge, so it wears the gauge.
-
-    Drawn rather than embedded because it is two arcs, and because
-    tools/gen_icon.py already draws it this way for every icon size - a shared
-    SVG would be a third description of the same shape.
+    The app watches more than one agent, so no agent's face can stand for it.
+    Drawn rather than embedded: tools/gen_icon.py already draws it this way for
+    every icon size, and an SVG would be a third description of one shape.
     """
     box = float(height)
     pm = QPixmap(int(box * dpr), int(box * dpr))

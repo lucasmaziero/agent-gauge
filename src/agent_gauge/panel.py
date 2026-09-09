@@ -105,19 +105,13 @@ class Panel(QWidget):
         return t("panel.how_signin") + "  →"
 
     def _status_line(self) -> str:
-        """The incident line, or "" when the line is not about the status page.
-
-        An app-side failure - a refused token, a dead network - lands in the
-        same slot but is not something the status page answers, so it is not
-        offered as a link.
-        """
+        """The incident line, or "" when the slot holds an app-side failure -
+        a refused token is not something a status page answers."""
         snap = self.snap
         if snap and snap.error:
             return ""
-        # The arrow is the only thing saying the line can be clicked - the same
-        # mark the setup link uses. Without it a link nobody hovers is a link
-        # nobody has. The incident is elided to what is left after it, not to
-        # the full column, or the arrow is what gets cut.
+        # Elided to what is left after the arrow, not to the full column, or
+        # the arrow is what gets cut.
         arrow, _ = paint.ink(STATUS_ARROW, 8)
         if snap and snap.incidents:
             return paint.elide("! " + snap.incidents[0], COL - arrow, 8) + STATUS_ARROW
@@ -129,10 +123,8 @@ class Panel(QWidget):
         return provider.status_host
 
     def _status_zone(self) -> QRectF:
-        """Hit area of the status line, measured off the text rather than the
-        column: the incident is elided to fit and the "no incidents" line is
-        shorter still, so a full-width zone would put the hand cursor over a
-        stretch of empty card."""
+        """Hit area of the status line, measured off the text: a full-width
+        zone would put the hand cursor over a stretch of empty card."""
         label = self._status_line()
         if not label:
             return QRectF()
@@ -194,9 +186,7 @@ class Panel(QWidget):
 
         paint.text(p, head.adjusted(offset, 0, 0, 0), provider.label.upper(),
                    theme.TEXT, 9, QFont.Weight.DemiBold, spacing=1.2)
-        # The plan wears the agent's colour, not the theme's: it is the only
-        # other word in the header, and in coral it kept saying "Anthropic"
-        # above Codex's numbers.
+        # In the theme accent it kept saying "Anthropic" over Codex's numbers.
         paint.text(p, head, (snap.subscription if snap else "").upper() or theme.NO_DATA,
                    brand.tint(provider.key), 8, QFont.Weight.DemiBold,
                    align=right, spacing=1.0)
@@ -261,8 +251,7 @@ class Panel(QWidget):
             paint.text(p, line, paint.elide(snap.error, COL, 8),
                        theme.MUTED if snap.waiting else theme.BAD, 8)
         else:
-            # Painted from the same string the hit area is measured from. Two
-            # sources for one line is how a zone drifts off the text it covers.
+            # Same string the hit area is measured from, or the zone drifts.
             text = self._status_line()
             if snap and snap.incidents:
                 colour = theme.ACCENT if self._hover_status else theme.WARN

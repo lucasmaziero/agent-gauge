@@ -1,13 +1,10 @@
 """Is there a newer build than this one?
 
-The widget installs itself and never updates itself: there is no updater, no
-background check, and nothing here runs unless the user asks. All this does is
-read the latest tag GitHub publishes and compare it with the version this
-build was cut from.
+No updater and no background check: this reads the latest tag GitHub publishes
+and compares it with the version this build was cut from, and only when asked.
 
-Kept apart from api.py on purpose. That module talks to Anthropic with Claude
-Code's own User-Agent because it is reading Claude Code's rate limits; this one
-talks to GitHub as itself.
+Apart from api.py on purpose - that module talks to Anthropic wearing Claude
+Code's User-Agent, this one talks to GitHub as itself.
 """
 from __future__ import annotations
 
@@ -20,10 +17,8 @@ from . import __version__, diag, net
 
 REPO = "lucasmaziero/agent-gauge"
 LATEST_ENDPOINT = f"https://api.github.com/repos/{REPO}/releases/latest"
-# Where someone told about a new version is sent. The project page rather
-# than the release page: it names the file for each platform and says what
-# that platform will object to, where the release page is an undifferentiated
-# list of eight files and leaves the reader to work out which two are theirs.
+# The project page, not the release page: it names the file for each platform,
+# where the release page is eight files and leaves the reader to sort them.
 SITE_URL = "https://lucasmaziero.github.io/agent-gauge/"
 DOWNLOAD_URL = f"{SITE_URL}#downloads"
 SOURCE_URL = f"https://github.com/{REPO}"
@@ -88,13 +83,11 @@ def _reason(exc: Exception) -> str:
 def fetch_latest() -> Latest:
     """Ask GitHub for the newest published tag.
 
-    Every failure used to come back as the same empty string, which the card
-    reported as "could not reach GitHub" - and HTTPError is a subclass of
-    URLError, so a 403 for the unauthenticated rate limit said exactly that too.
-    Sixty requests an hour is per IP, so an office or anything behind CGNAT can
-    exhaust it without this machine having made a single one. Telling someone
-    their network is down when GitHub is simply counting is a wrong answer, not
-    a vague one.
+    Each failure is named, because HTTPError subclasses URLError and a 403 for
+    the rate limit used to report itself as a dead network. The sixty requests
+    an hour are counted per IP, so an office can exhaust them without this
+    machine making one - "your network is down" is then a wrong answer, not a
+    vague one.
     """
     request = urllib.request.Request(
         LATEST_ENDPOINT,
