@@ -194,8 +194,12 @@ class Panel(QWidget):
 
         paint.text(p, head.adjusted(offset, 0, 0, 0), provider.label.upper(),
                    theme.TEXT, 9, QFont.Weight.DemiBold, spacing=1.2)
+        # The plan wears the agent's colour, not the theme's: it is the only
+        # other word in the header, and in coral it kept saying "Anthropic"
+        # above Codex's numbers.
         paint.text(p, head, (snap.subscription if snap else "").upper() or theme.NO_DATA,
-                   theme.ACCENT, 8, QFont.Weight.DemiBold, align=right, spacing=1.0)
+                   brand.tint(provider.key), 8, QFont.Weight.DemiBold,
+                   align=right, spacing=1.0)
 
     def _primary(self, p: QPainter, rect: QRectF, u, now: float) -> None:
         """5h window: its own card, big number, full segmented meter."""

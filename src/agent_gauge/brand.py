@@ -86,13 +86,35 @@ class Mark:
     # The mark's own colour: one value, or the stops of a vertical gradient as
     # (offset, colour). Used whenever the caller does not force a flat tint.
     ink: str | tuple[tuple[float, str], ...] = theme.ACCENT.name()
+    # One solid colour standing for this agent in text beside the mark. A
+    # gradient cannot letter a word, so this is picked, not derived.
+    tint: str = theme.ACCENT.name()
+    # Correction for how big the mark *looks* rather than how tall it is. See
+    # `mark()`: matching height alone leaves a compact shape reading small.
+    optical: float = 1.0
 
 
 MARKS = {
-    "claude": Mark(_CLAWD, 15.0, theme.ACCENT.name()),
+    "claude": Mark(_CLAWD, 15.0, theme.ACCENT.name(), theme.ACCENT.name()),
     # OpenAI's own ramp for Codex, top to bottom, taken from the official SVG.
-    "codex": Mark(_CODEX, 24.0, ((0.0, "#B1A7FF"), (0.5, "#7A9DFF"), (1.0, "#3941FF"))),
+    # The tint is the middle stop, not the solid blue at the foot of it: that
+    # one measures 2.8:1 against the panel and is unreadable as small caps,
+    # where this one measures 6.7:1 - better than the coral it replaces.
+    # Drawn 15% over its asked height. Matching height alone left it reading
+    # small beside Clawd: at 13pt both are 13pt tall, but Clawd is 20.8pt wide
+    # and Codex 13pt square - 123 square points of ink against 192, two thirds
+    # the visual mass. Full parity would need 1.25, and that makes Codex the
+    # taller mark, which overcorrects into looking bigger. Measured, then
+    # chosen by looking at the two side by side.
+    "codex": Mark(_CODEX, 24.0,
+                  ((0.0, "#B1A7FF"), (0.5, "#7A9DFF"), (1.0, "#3941FF")),
+                  "#7A9DFF", 1.15),
 }
+
+
+def tint(key: str) -> QColor:
+    """The agent's one solid colour, for text that sits beside its mark."""
+    return QColor(MARKS.get(key, MARKS[FALLBACK]).tint)
 FALLBACK = "claude"
 
 _VIEWBOX = 24.0
@@ -134,7 +156,7 @@ def mark(key: str, height: int, color: QColor | None = None,
         return _cache[cache_key]
 
     chosen = MARKS.get(key, MARKS[FALLBACK])
-    box = height * _VIEWBOX / chosen.ink_height
+    box = height * chosen.optical * _VIEWBOX / chosen.ink_height
     pm = QPixmap(int(box * dpr), int(box * dpr))
     pm.setDevicePixelRatio(dpr)
     pm.fill(Qt.GlobalColor.transparent)
