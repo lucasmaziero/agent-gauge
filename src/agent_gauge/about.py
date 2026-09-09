@@ -1,14 +1,11 @@
 """Who made this, which version it is, and whether there is a newer one.
 
-Painted differently from the rest of the app on purpose. The widget and the
-panel lay out every glyph by hand because they are instruments: numbers that
-must not jitter, columns that must not collide. This is prose and two links, so
-Qt lays it out, and the only hand-painted part is the card underneath - the
-same shadow and surface the panel draws, so it reads as the same object.
+Laid out by Qt, unlike the rest of the app: the widget and panel place every
+glyph by hand because they are instruments, but this is prose and two links.
+Only the card underneath is painted, with the panel's shadow and surface so it
+reads as the same object.
 
-The update check runs only when asked. There is no background poll and no
-auto-update: the app tells you a newer tag exists and hands you the release
-page, and what happens next is yours.
+The update check runs only when asked - no background poll, no auto-update.
 """
 from __future__ import annotations
 
@@ -32,11 +29,9 @@ M = 16                       # transparent margin reserved for the shadow
 APP_NAME = "Agent Gauge"
 AUTHOR = "Lucas Maziero"
 
-# Between the two links. The spaces are hair spaces because a plain "  ·  "
-# collapses to one space in rich text and the dot ends up crowding the word
-# before it. No colour of its own: text between two anchors keeps the label's,
-# so the dot comes out muted and reads as punctuation rather than a third thing
-# to click - measured off the render, not assumed.
+# Hair spaces: a plain "  ·  " collapses to one in rich text and the dot
+# crowds the word before it. No colour of its own, so it stays punctuation
+# rather than reading as a third thing to click.
 SEP = "&#8202;&#8202;·&#8202;&#8202;"
 
 # What each way of failing is called on screen. Anything unrecognised falls back
@@ -110,9 +105,8 @@ class About(QWidget):
         head = QHBoxLayout()
         head.setSpacing(SM)
         mark = QLabel()
-        # The gauge, not an agent's mascot. This card is about the app, and the
-        # app watches either agent - it wore Clawd here while showing Codex
-        # numbers, which is the one thing the whole product must not do.
+        # The gauge, not an agent's mascot: this card is about the app, which
+        # watches either. It wore Clawd here while showing Codex numbers.
         mark.setPixmap(brand.gauge(14, theme.ACCENT, self.devicePixelRatioF()))
         head.addWidget(mark)
 
@@ -128,9 +122,7 @@ class About(QWidget):
 
         outer.addWidget(self._rule())
 
-        # One line saying what this is, then who and under what licence, then
-        # where to go. A card that carried only a bare repository URL asked the
-        # reader to already know what the program was.
+        # A bare repository URL asked the reader to already know what this was.
         tagline = QLabel(t("about.tagline"))
         tagline.setFont(paint.font(9))
         tagline.setWordWrap(True)
@@ -203,9 +195,9 @@ class About(QWidget):
         self._check.start()
 
     def _checked(self, latest) -> None:
-        """None of the failures may be worded as a pass, and they must not be
-        worded as each other either: "could not reach GitHub" sent at least one
-        person looking at their network when GitHub was rate limiting them."""
+        """No failure may be worded as a pass, or as another failure: "could
+        not reach GitHub" sent someone hunting a network fault that was a rate
+        limit."""
         self.button.setEnabled(True)
         if not latest.ok:
             self.status.setText(t(FAILURES.get(latest.problem, "about.unreachable")))
@@ -215,10 +207,18 @@ class About(QWidget):
         else:
             self.status.setText(t("about.current"))
 
-    def closeEvent(self, event) -> None:
-        if self._check and self._check.isRunning():
-            self._check.wait(2000)
-        super().closeEvent(event)
+    def dispose(self) -> None:
+        """Retire a translated card without destroying a running child thread."""
+        self.close()
+        if self._check:
+            self._check.finished.connect(self.deleteLater)
+        if not self._check or not self._check.isRunning():
+            self.deleteLater()
+
+    def wait_for_check(self) -> None:
+        """Keep the thread alive until its request finishes during shutdown."""
+        if self._check:
+            self._check.wait()
 
     # -------------------------------------------------------------- painting
     def paintEvent(self, _event) -> None:

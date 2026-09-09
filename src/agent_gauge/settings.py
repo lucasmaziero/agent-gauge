@@ -4,10 +4,13 @@ See `paths.config_dir` for the three locations.
 """
 from __future__ import annotations
 
+import contextlib
 import json
+import math
 from pathlib import Path
 
 from .paths import config_dir, config_file
+from .storage import atomic_write
 
 CONFIG_DIR = config_dir()
 CONFIG_FILE = config_file()
@@ -41,16 +44,30 @@ class Settings(dict):
         """Merge stored values over the defaults; unknown keys are dropped."""
         try:
             stored = json.loads(self.path.read_text(encoding="utf-8"))
-        except (OSError, json.JSONDecodeError):
+        except (OSError, ValueError):
+            return
+        if not isinstance(stored, dict):
             return
         for key in DEFAULTS:
-            if key in stored:
-                self[key] = stored[key]
+            value = stored.get(key, DEFAULTS[key])
+            if key in ("pos_x", "pos_y"):
+                valid = value is None or type(value) is int
+            elif key in ("poll_sec", "alert_at"):
+                valid = type(value) is int
+            elif key == "opacity":
+                valid = type(value) in (int, float) and math.isfinite(value)
+            else:
+                valid = type(value) is type(DEFAULTS[key])
+            if valid:
+                self[key] = value
         self["poll_sec"] = min(max(int(self["poll_sec"]), MIN_POLL), MAX_POLL)
+        self["opacity"] = min(max(self["opacity"], 0.1), 1.0)
+        self["alert_at"] = min(max(self["alert_at"], 0), 100)
+        if self["language"] not in ("auto", "en", "pt_BR"):
+            self["language"] = DEFAULTS["language"]
+        if self["provider"] not in ("claude", "codex"):
+            self["provider"] = DEFAULTS["provider"]
 
     def save(self) -> None:
-        try:
-            self.path.parent.mkdir(parents=True, exist_ok=True)
-            self.path.write_text(json.dumps(dict(self), indent=2), encoding="utf-8")
-        except OSError:
-            pass  # an unsaved preference must never take the app down
+        with contextlib.suppress(OSError):
+            atomic_write(self.path, json.dumps(dict(self), indent=2))

@@ -1,18 +1,15 @@
 """What the widget needs from whatever it is watching.
 
-Two coding agents, one gauge. The fit is closer than it has any right to be:
-both Claude Code and Codex meter a rolling five-hour window and a weekly one,
-both at 18000 and 604800 seconds exactly, both reporting a percentage and a
-reset time, and both leave their credentials in clear text at a fixed path. So
-`Usage` did not have to change and neither did any of the drawing - the seam is
-here, and it is thin.
+The fit is closer than it has any right to be: both agents meter a rolling
+five-hour window and a weekly one, at 18000 and 604800 seconds exactly, both
+reporting a percentage and a reset time. So `Usage` did not have to change and
+neither did any of the drawing - the seam is here, and it is thin.
 
-Where they differ is in what a reading costs. Anthropic publishes no usage
-endpoint for subscription accounts, so the Claude provider spends one output
-token per cycle to read the headers of a reply it throws away. Codex has a
-usage endpoint, so its provider spends nothing. That difference is the reason
-`fetch` takes the whole credentials object rather than a token: what a provider
-needs to ask its own question is its own business.
+They differ in what a reading costs: Anthropic publishes no usage endpoint for
+subscription accounts, so that provider spends an output token per cycle
+reading the headers of a reply it discards, where Codex spends nothing. Hence
+`fetch` takes the whole credentials object rather than a token - what a
+provider needs to ask its own question is its own business.
 """
 from __future__ import annotations
 
@@ -32,6 +29,10 @@ class Provider(ABC):
     short: str          # every message the widget's 120px error column shows
     help_url: str       # where someone with no credentials should be sent
     status_host: str    # the status page this agent's outages are reported on
+
+    def auth_file(self) -> Path:
+        """Credentials file watched for renewal between collection cycles."""
+        return self.home() / "auth.json"
 
     @abstractmethod
     def home(self) -> Path:

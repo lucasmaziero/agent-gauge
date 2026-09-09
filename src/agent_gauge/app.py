@@ -154,6 +154,7 @@ class App(QObject):
         self._alerted_for = -1                # the window reset already announced
         self.about: About | None = None       # built on first use, dropped on a
                                               # language change so it rebuilds
+        self._retired_about: list[About] = []
         i18n.set_language(self.settings["language"])
 
         self.widget = FloatingWidget(self.settings)
@@ -279,8 +280,10 @@ class App(QObject):
         self.settings.save()
         i18n.set_language(code)
         if self.about is not None:         # its labels were built once, in the old language
-            self.about.close()
-            self.about.deleteLater()
+            retired = self.about
+            self._retired_about.append(retired)
+            retired.destroyed.connect(lambda: self._retired_about.remove(retired))
+            retired.dispose()
             self.about = None
         self._build_menu()                 # labels live in the actions themselves
         self.tray.setContextMenu(self.menu)
@@ -327,6 +330,11 @@ class App(QObject):
             self.about.check()
 
     def _toggle_widget(self, on: bool) -> None:
+        if not on and not QSystemTrayIcon.isSystemTrayAvailable():
+            on = True
+            self.act_visible.blockSignals(True)
+            self.act_visible.setChecked(True)
+            self.act_visible.blockSignals(False)
         self.settings["widget_visible"] = on
         self.settings.save()
         self.widget.setVisible(on)
@@ -446,10 +454,13 @@ class App(QObject):
             self.panel.update()
 
     def _shutdown(self) -> None:
-        if self.about is not None:
-            self.about.close()             # waits on an update check still in flight
         self.poller.stop()
-        self.poller.wait(3000)
+        if self.about is not None:
+            self.about.close()
+            self.about.wait_for_check()
+        for retired in self._retired_about:
+            retired.wait_for_check()
+        self.poller.wait()
         self.tray.hide()
 
 

@@ -22,6 +22,7 @@ from __future__ import annotations
 
 import base64
 import json
+import math
 import time
 import urllib.error
 import urllib.request
@@ -60,11 +61,15 @@ def _claims(token: str) -> dict:
 
 def _window(block: dict) -> tuple[float, int]:
     """(percent, reset epoch) out of one of the two rate-limit windows."""
-    percent = float(block.get("used_percent") or 0.0)
+    percent = float(block["used_percent"])
     reset = block.get("reset_at")
     if reset is None and block.get("reset_after_seconds") is not None:
         reset = time.time() + float(block["reset_after_seconds"])
-    return percent, int(reset or 0)
+    reset = float(reset)
+    if (isinstance(block["used_percent"], bool) or not math.isfinite(percent)
+            or not 0 <= percent <= 100 or not math.isfinite(reset) or reset <= 0):
+        raise ValueError("Invalid rate-limit window")
+    return percent, int(reset)
 
 
 def _claim(data: dict) -> str:
@@ -162,6 +167,8 @@ class Codex(Provider):
         for attempt in range(RETRIES + 1):
             try:
                 return self._read(request)
+            except (ValueError, TypeError, KeyError, AttributeError, OverflowError):
+                return Usage(ok=False, error=t("error.no_windows"))
             except urllib.error.HTTPError as exc:
                 code = exc.code
                 exc.close()

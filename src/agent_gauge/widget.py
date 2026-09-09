@@ -256,8 +256,7 @@ class FloatingWidget(QWidget):
         # as a cycle that started before the switch is still in flight.
         key = providers.get(
             snap.provider if snap and snap.provider else str(self.settings["provider"])).key
-        # None means the mark's own colour. Grey still wins when the agent is
-        # unwell: the indicator outranks the branding.
+        # None keeps the mark's own colour; grey still wins when unwell.
         icon = brand.mark(key, MASCOT_PT, theme.FAINT if unwell else None,
                           self.devicePixelRatioF())
         w = icon.width() / icon.devicePixelRatio()
