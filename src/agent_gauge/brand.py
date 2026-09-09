@@ -4,13 +4,15 @@
 generator. The two below are the agents' and stand only for whose numbers are
 on screen.
 
-Clawd is Claude Code's own mark, drawn from the official SVG. The Codex slot is
-not OpenAI's logo and must not become it: that is their trademark, and putting
-it on a third-party gauge would be claiming an endorsement nobody gave. What
-sits there instead is a mascot of this project's own, built in Clawd's language
-so the two read as a set - blocky silhouette, eyes as holes in the path, one
-flat colour, and the same y 5..20 band of the viewBox so every size and centring
-calculation below works unchanged for both.
+Both are the agents' official marks, drawn from their own SVGs, and each wears
+its own colour: Anthropic's coral, and the blue-violet gradient OpenAI gives
+Codex. They used to share the theme accent, which made the two agents look
+alike in the one place whose entire job is saying them apart - a Codex user
+glancing at the header saw Claude's colour over Codex's numbers.
+
+The colour gives way to grey when the agent is unwell, because that signal
+matters more than the branding: a mark that stayed on-brand through an outage
+would be a logo, not an indicator.
 
 Both are embedded as strings so there is no data file for PyInstaller to miss.
 """
@@ -55,9 +57,17 @@ _CODEX = (
 )
 
 _SVG = (
-    '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">'
+    '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">{defs}'
     '<path clip-rule="evenodd" fill-rule="evenodd" fill="{fill}" d="{path}"/></svg>'
 )
+
+# The gradient runs down the ink itself, not the viewBox: a mark inset in its
+# box would otherwise start partway along the ramp and lose one end of it.
+_DEFS = (
+    '<defs><linearGradient id="g" gradientUnits="userSpaceOnUse"'
+    ' x1="12" y1="{top}" x2="12" y2="{bottom}">{stops}</linearGradient></defs>'
+)
+_STOP = '<stop offset="{at}" stop-color="{color}"/>'
 
 
 @dataclass(frozen=True)
@@ -73,11 +83,15 @@ class Mark:
 
     path: str
     ink_height: float
+    # The mark's own colour: one value, or the stops of a vertical gradient as
+    # (offset, colour). Used whenever the caller does not force a flat tint.
+    ink: str | tuple[tuple[float, str], ...] = theme.ACCENT.name()
 
 
 MARKS = {
-    "claude": Mark(_CLAWD, 15.0),
-    "codex": Mark(_CODEX, 24.0),
+    "claude": Mark(_CLAWD, 15.0, theme.ACCENT.name()),
+    # OpenAI's own ramp for Codex, top to bottom, taken from the official SVG.
+    "codex": Mark(_CODEX, 24.0, ((0.0, "#B1A7FF"), (0.5, "#7A9DFF"), (1.0, "#3941FF"))),
 }
 FALLBACK = "claude"
 
@@ -86,16 +100,36 @@ _VIEWBOX = 24.0
 _cache: dict[tuple[str, int, str, float], QPixmap] = {}
 
 
-def mark(key: str, height: int, color: QColor = theme.ACCENT,
+def _fill(chosen: Mark, color: QColor | None) -> tuple[str, str]:
+    """How to paint this mark: the `fill` attribute, and any `<defs>` it needs.
+
+    A colour forces a flat tint - that is the grey an unwell agent wears, and it
+    has to beat the branding. Without one the mark uses its own ink, which for
+    Codex is a gradient and so needs a definition alongside it.
+    """
+    if color is not None:
+        return color.name(), ""
+    if isinstance(chosen.ink, str):
+        return chosen.ink, ""
+
+    top = (_VIEWBOX - chosen.ink_height) / 2
+    stops = "".join(_STOP.format(at=at, color=c) for at, c in chosen.ink)
+    return "url(#g)", _DEFS.format(top=top, bottom=top + chosen.ink_height, stops=stops)
+
+
+def mark(key: str, height: int, color: QColor | None = None,
          dpr: float = 1.0) -> QPixmap:
     """The named agent's mark, `height` pixels tall, measured on the drawn band.
+
+    `color` forces a flat tint and is how an unwell agent goes grey. Left out,
+    the mark wears its own colour - which is the point of having two.
 
     The pixmap comes out taller than requested because the viewBox has empty
     rows above and below; that transparent slack is what centers the mascot on a
     text line. Pass the window's devicePixelRatioF so it stays crisp when
     Windows scaling is above 100%.
     """
-    cache_key = (key, height, color.name(), dpr)
+    cache_key = (key, height, color.name() if color is not None else "own", dpr)
     if cache_key in _cache:
         return _cache[cache_key]
 
@@ -105,7 +139,8 @@ def mark(key: str, height: int, color: QColor = theme.ACCENT,
     pm.setDevicePixelRatio(dpr)
     pm.fill(Qt.GlobalColor.transparent)
 
-    svg = _SVG.format(fill=color.name(), path=chosen.path)
+    fill, defs = _fill(chosen, color)
+    svg = _SVG.format(fill=fill, defs=defs, path=chosen.path)
     renderer = QSvgRenderer(QByteArray(svg.encode()))
     p = QPainter(pm)
     p.setRenderHint(QPainter.RenderHint.Antialiasing, True)

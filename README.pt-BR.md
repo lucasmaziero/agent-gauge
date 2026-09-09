@@ -169,8 +169,11 @@ descrever. Falha do lado do app cai no mesmo lugar e de propósito não vira lin
 não é coisa que página de status responda, e mandar alguém para lá seria resposta errada vestida de
 ajuda.
 
-O mascote do cabeçalho acinzenta quando há erro de coleta ou incidente aberto, o mesmo sinal que o
-selo do widget dá.
+Cada agente veste a própria cor — o coral da Anthropic e o gradiente azul-violeta que a OpenAI dá ao
+Codex —, porque antes os dois usavam o mesmo accent do tema, o que deixava o cabeçalho igual sob
+qualquer agente justamente no lugar cuja única função é distingui-los. A cor cede lugar ao cinza
+quando há erro de coleta ou incidente aberto, o mesmo sinal que o selo do widget dá: um mascote que
+seguisse na cor da marca durante uma queda seria um logo, não um indicador.
 
 **Sem token** não há o que carimbar com hora, então o rodapé carrega a saída: um link para a página
 de setup do agente que está sendo monitorado. Ele nomeia o beco exato — **Instalar o Claude Code**
@@ -292,7 +295,7 @@ installer/          empacotamento       tools/       geradores de ícone e previ
 
 ```powershell
 uv sync                                           # cria o .venv com o grupo de dev
-uv run pytest                                     # 276 testes, sem rede e sem janela
+uv run pytest                                     # 280 testes, sem rede e sem janela
 uv run ruff check .                               # lint (regras em pyproject.toml)
 uv run python tools/preview.py docs/preview.png   # render offline das duas telas
 $env:AGENT_GAUGE_DEBUG=1; uv run agent-gauge    # imprime cada ciclo no console

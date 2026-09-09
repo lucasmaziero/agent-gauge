@@ -1,0 +1,6 @@
+{
+    // VSCode general settings
+    "editor.fontSize": 14,
+    "window.zoomLevel": 0.5,
+    "explorer.compactFolders": false,
+}

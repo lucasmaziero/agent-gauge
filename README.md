@@ -169,8 +169,11 @@ earns the link by being unable to finish its own sentence: the incident title is
 the same slot and is deliberately not a link - a refused token is not something a status page
 answers, and sending someone there would be a wrong answer wearing the shape of help.
 
-The mascot in the header goes gray on a fetch error or an open incident, the same signal the
-widget's badge gives.
+Each agent's mascot wears its own colour - Anthropic's coral, and the blue-violet gradient OpenAI
+gives Codex - because they used to share the theme accent, which made the header look the same under
+either agent in the one place whose whole job is telling them apart. The colour gives way to gray on
+a fetch error or an open incident, the same signal the widget's badge gives: a mark that stayed
+on-brand through an outage would be a logo, not an indicator.
 
 **With no token** there is nothing to timestamp, so the footer carries the way out instead: a link
 to the setup page of whichever agent is being watched. It names the actual dead end - **Get Claude
@@ -291,7 +294,7 @@ installer/          packaging           tools/       icon and preview generators
 
 ```powershell
 uv sync                                           # creates the .venv with the dev group
-uv run pytest                                     # 276 tests, no network, no windows
+uv run pytest                                     # 280 tests, no network, no windows
 uv run ruff check .                               # lint (rules in pyproject.toml)
 uv run python tools/preview.py docs/preview.png   # offline render of both surfaces
 $env:AGENT_GAUGE_DEBUG=1; uv run agent-gauge    # prints every cycle to the console

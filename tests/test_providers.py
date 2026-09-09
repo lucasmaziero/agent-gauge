@@ -426,3 +426,70 @@ def test_the_switched_in_agent_gets_its_own_incidents(monkeypatch, tmp_path):
     snap = poll._collect()
 
     assert snap.incidents == ["Anthropic: elevated error rates"]
+
+
+# ------------------------------------------------------------ the mark colour
+def _tones(key, color=None, height=48):
+    """Every fully opaque colour in a rendered mark, and where its ink lies.
+
+    Fully opaque, not merely visible: an antialiased edge pixel carries the
+    right colour rounded off by its own coverage, and counting those turns one
+    flat fill into four near-identical tones.
+    """
+    from agent_gauge import brand
+
+    img = brand.mark(key, height, color, 1.0).toImage()
+    ink = [(x, y) for y in range(img.height()) for x in range(img.width())
+           if img.pixelColor(x, y).alpha() == 255]
+    assert ink, f"{key} rendered nothing"
+    return {img.pixelColor(x, y).name() for x, y in ink}, ink
+
+
+def test_each_agent_wears_its_own_colour(qapp):
+    """They used to share the theme accent, so the header looked the same under
+    either agent - in the one place whose whole job is telling them apart."""
+    claude, _ = _tones("claude")
+    codex, _ = _tones("codex")
+    assert not (claude & codex), "the two marks share a colour"
+
+
+def test_claude_is_flat_and_codex_is_a_ramp(qapp):
+    """Anthropic's mark is one colour; OpenAI gives Codex a vertical gradient,
+    and flattening it to a single stop would be a different logo."""
+    from agent_gauge import theme
+
+    claude, _ = _tones("claude")
+    assert claude == {theme.ACCENT.name()}
+
+    codex, ink = _tones("codex")
+    assert len(codex) > 20, f"only {len(codex)} tones: the gradient did not render"
+
+    img_top = min(y for _, y in ink)
+    img_bottom = max(y for _, y in ink)
+    assert img_bottom > img_top
+
+
+def test_an_unwell_agent_goes_grey_whatever_its_brand_is(qapp):
+    """The indicator outranks the branding: a mark that stayed on-brand through
+    an outage would be a logo, not a signal. The gradient has to collapse too."""
+    from agent_gauge import theme
+
+    for key in ("claude", "codex"):
+        tones, _ = _tones(key, theme.FAINT)
+        assert tones == {theme.FAINT.name()}, f"{key} kept its colour while unwell"
+
+
+def test_the_embedded_codex_ramp_matches_its_source(qapp):
+    """Provenance, like the path beside it. Only the stops are taken from this
+    file - the geometry still comes from the monochrome codex-mark.svg, which is
+    the one drawn without the white plate this app has no use for."""
+    import re
+    from pathlib import Path
+
+    from agent_gauge import brand
+
+    source = Path(__file__).resolve().parents[1] / "installer" / "codex-mark-color.svg"
+    expected = [c.lower() for c in
+                re.findall(r'stop-color="(#[0-9A-Fa-f]{6})"', source.read_text(encoding="utf-8"))]
+    embedded = [c.lower() for _, c in brand.MARKS["codex"].ink]
+    assert embedded == expected

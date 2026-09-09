@@ -256,7 +256,9 @@ class FloatingWidget(QWidget):
         # as a cycle that started before the switch is still in flight.
         key = providers.get(
             snap.provider if snap and snap.provider else str(self.settings["provider"])).key
-        icon = brand.mark(key, MASCOT_PT, theme.FAINT if unwell else theme.ACCENT,
+        # None means the mark's own colour. Grey still wins when the agent is
+        # unwell: the indicator outranks the branding.
+        icon = brand.mark(key, MASCOT_PT, theme.FAINT if unwell else None,
                           self.devicePixelRatioF())
         w = icon.width() / icon.devicePixelRatio()
         p.drawPixmap(QPointF(card.right() - MENU_W / 2 - w / 2, card.top() + SM), icon)
