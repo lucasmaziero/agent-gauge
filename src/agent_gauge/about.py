@@ -51,7 +51,7 @@ def link(href: str, text: str) -> str:
     from the document, not the stylesheet - so without this every link in here
     renders in the default blue with an underline.
     """
-    return (f'<a href="{href}" style="color:{theme.ACCENT.name()};'
+    return (f'<a href="{href}" style="color:{theme.INTERACTIVE.name()};'
             f' text-decoration:none;">{text}</a>')
 
 

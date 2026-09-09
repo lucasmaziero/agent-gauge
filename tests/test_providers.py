@@ -534,35 +534,10 @@ def test_the_correction_stops_short_of_making_codex_the_taller_mark(qapp):
     assert 1.0 < codex_h / claude_h < 1.2, f"codex is {codex_h / claude_h:.0%} of Clawd's height"
 
 
-def test_the_plan_wears_the_agent_s_own_colour(qapp):
-    """In the theme accent it said "Anthropic" over Codex's numbers."""
-    from agent_gauge import brand, theme
+def test_the_marks_are_the_only_thing_wearing_an_agent_s_colour(qapp):
+    """The plan label used to take it too. The mark alone says which agent this
+    is; a second coloured thing in the header only competed with it."""
+    from agent_gauge import brand
 
-    assert brand.tint("claude") == theme.ACCENT
-    assert brand.tint("codex") != theme.ACCENT
-    assert brand.tint("codex").name() == "#7a9dff"
-
-
-def test_the_plan_colour_is_readable_on_the_panel(qapp):
-    """The solid blue at the foot of the Codex ramp is the obvious pick and the
-    wrong one: it measures 2.8:1 against the panel, below any usable floor.
-    Whatever is chosen has to clear the coral it replaces."""
-    from agent_gauge import brand, theme
-
-    def luminance(c):
-        def channel(v):
-            v /= 255
-            return v / 12.92 if v <= 0.03928 else ((v + 0.055) / 1.055) ** 2.4
-        return (0.2126 * channel(c.red()) + 0.7152 * channel(c.green())
-                + 0.0722 * channel(c.blue()))
-
-    def contrast(a, b):
-        la, lb = luminance(a), luminance(b)
-        return (max(la, lb) + 0.05) / (min(la, lb) + 0.05)
-
-    from PySide6.QtGui import QColor
-
-    panel = QColor(theme.SURFACE)
-    baseline = contrast(theme.ACCENT, panel)
-    for key in ("claude", "codex"):
-        assert contrast(brand.tint(key), panel) >= baseline - 0.01
+    assert not hasattr(brand, "tint")
+    assert not any(f.name == "tint" for f in brand.Mark.__dataclass_fields__.values())

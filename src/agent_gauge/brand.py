@@ -71,30 +71,21 @@ class Mark:
     path: str
     ink_height: float
     ink: str | tuple[tuple[float, str], ...] = theme.ACCENT.name()   # flat, or gradient stops
-    tint: str = theme.ACCENT.name()      # one solid colour, for text beside the mark
     optical: float = 1.0                 # how big it *looks*, not how tall it is
 
 
-# The tint is the ramp's middle stop: the solid blue at its foot measures 2.8:1
-# against the panel, unreadable as small caps, where this one measures 6.7:1.
-# The 1.15 is optical - at the same asked height Clawd is 20.8pt wide and Codex
-# a 13pt square, two thirds the ink. Parity would need 1.25, which makes Codex
-# the taller mark and overcorrects.
+# The 1.15 is optical: at the same asked height Clawd is 20.8pt wide and Codex a
+# 13pt square, two thirds the ink. Parity would need 1.25, which makes Codex the
+# taller mark and overcorrects.
 MARKS = {
-    "claude": Mark(_CLAWD, 15.0, theme.ACCENT.name(), theme.ACCENT.name()),
+    "claude": Mark(_CLAWD, 15.0, theme.ACCENT.name()),
     "codex": Mark(_CODEX, 24.0,
-                  ((0.0, "#B1A7FF"), (0.5, "#7A9DFF"), (1.0, "#3941FF")),
-                  "#7A9DFF", 1.15),
+                  ((0.0, "#B1A7FF"), (0.5, "#7A9DFF"), (1.0, "#3941FF")), 1.15),
 }
 FALLBACK = "claude"
 
 _VIEWBOX = 24.0
 _cache: dict[tuple[str, int, str, float], QPixmap] = {}
-
-
-def tint(key: str) -> QColor:
-    """The agent's one solid colour, for text that sits beside its mark."""
-    return QColor(MARKS.get(key, MARKS[FALLBACK]).tint)
 
 
 def _fill(chosen: Mark, color: QColor | None) -> tuple[str, str]:

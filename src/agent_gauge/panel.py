@@ -186,10 +186,8 @@ class Panel(QWidget):
 
         paint.text(p, head.adjusted(offset, 0, 0, 0), provider.label.upper(),
                    theme.TEXT, 9, QFont.Weight.DemiBold, spacing=1.2)
-        # In the theme accent it kept saying "Anthropic" over Codex's numbers.
         paint.text(p, head, (snap.subscription if snap else "").upper() or theme.NO_DATA,
-                   brand.tint(provider.key), 8, QFont.Weight.DemiBold,
-                   align=right, spacing=1.0)
+                   theme.TEXT, 8, QFont.Weight.DemiBold, align=right, spacing=1.0)
 
     def _primary(self, p: QPainter, rect: QRectF, u, now: float) -> None:
         """5h window: its own card, big number, full segmented meter."""
@@ -254,9 +252,9 @@ class Panel(QWidget):
             # Same string the hit area is measured from, or the zone drifts.
             text = self._status_line()
             if snap and snap.incidents:
-                colour = theme.ACCENT if self._hover_status else theme.WARN
+                colour = theme.INTERACTIVE if self._hover_status else theme.WARN
             else:
-                colour = theme.ACCENT if self._hover_status else theme.FAINT
+                colour = theme.INTERACTIVE if self._hover_status else theme.FAINT
             paint.text(p, line, text, colour, 8)
 
     def _footer(self, p: QPainter, snap: Snapshot | None, right) -> None:
@@ -266,7 +264,7 @@ class Panel(QWidget):
             # With no token there is nothing worth timestamping, so the slot
             # carries the way out instead of the hour a failure last repeated.
             paint.text(p, foot, label,
-                       theme.ACCENT if self._hover_setup else theme.MUTED, 8,
+                       theme.INTERACTIVE if self._hover_setup else theme.MUTED, 8,
                        QFont.Weight.DemiBold)
         else:
             stamp = time.strftime("%H:%M:%S", time.localtime(snap.at)) if snap else "--:--:--"
@@ -278,7 +276,7 @@ class Panel(QWidget):
             key = "panel.updated_idle" if every > chosen else "panel.updated"
             paint.text(p, foot, t(key, stamp=stamp, cadence=cadence), theme.FAINT, 8)
         paint.text(p, self._refresh_zone().translated(-M, -M), t("panel.refresh_now"),
-                   theme.ACCENT if self._hover_refresh else theme.MUTED, 8, align=right)
+                   theme.INTERACTIVE if self._hover_refresh else theme.MUTED, 8, align=right)
 
     def _tokens_line(self, snap: Snapshot | None) -> str:
         if not snap or not snap.totals.sessions:
