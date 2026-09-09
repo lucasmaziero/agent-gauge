@@ -186,7 +186,7 @@ class Panel(QWidget):
         # whose numbers these are, so it follows the selection rather than the
         # app: Clawd over Codex's percentages would be a lie about the source.
         unwell = bool(snap and (snap.error or snap.incidents))
-        icon = brand.mark(provider.key, 13, theme.FAINT if unwell else theme.ACCENT,
+        icon = brand.mark(provider.key, 13, theme.FAINT if unwell else None,
                           self.devicePixelRatioF())
         icon_h = icon.height() / icon.devicePixelRatio()
         p.drawPixmap(QPointF(PAD, head.center().y() - icon_h / 2), icon)
