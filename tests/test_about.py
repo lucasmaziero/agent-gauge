@@ -75,13 +75,16 @@ def test_the_button_comes_back_after_a_check(about):
     assert about.button.isEnabled()
 
 
-def test_links_carry_the_brand_colour(about):
+def test_links_carry_the_interactive_colour(about):
     """A QSS rule for `QLabel a` is ignored by Qt, so the colour has to be on
-    the tag; without it every link here renders in the default blue."""
+    the tag; without it every link here renders in the default blue. It is the
+    interactive colour, shared with the panel's hover states - the brand accent
+    put an agent's colour on a link that has nothing to do with an agent."""
     from agent_gauge import theme
 
     markup = link("https://example.com", "text")
-    assert theme.ACCENT.name() in markup
+    assert theme.INTERACTIVE.name() in markup
+    assert theme.ACCENT.name() not in markup
     assert "text-decoration:none" in markup
 
 

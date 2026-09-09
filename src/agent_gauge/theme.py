@@ -24,6 +24,10 @@ INK_LIGHT = QColor("#17171C")
 MUTED = QColor("#8C8C98")
 FAINT = QColor("#5C5C68")
 ACCENT = QColor("#D97757")   # Claude coral
+# Anything the pointer can act on: links, and a label under the cursor. One
+# name so the panel and the about card cannot drift, and deliberately not the
+# accent - in coral an ordinary link read as an agent's branding.
+INTERACTIVE = TEXT
 OK = QColor("#4ADE80")
 WARN = QColor("#FBBF24")
 BAD = QColor("#F87171")

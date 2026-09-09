@@ -171,10 +171,14 @@ ajuda.
 
 Cada agente veste a própria cor — o coral da Anthropic e o gradiente azul-violeta que a OpenAI dá ao
 Codex —, porque antes os dois usavam o mesmo accent do tema, o que deixava o cabeçalho igual sob
-qualquer agente justamente no lugar cuja única função é distingui-los. O plano ao lado assume a
-mesma cor; em coral, ele seguia dizendo "Anthropic" sobre os números do Codex. O azul é o do meio do
-gradiente, e não o azul sólido do pé dele: aquele mede 2,8:1 contra o painel e é ilegível em
-versalete, enquanto este mede 6,7:1 — melhor que o coral que substitui.
+qualquer agente justamente no lugar cuja única função é distingui-los. O mascote é a única coisa que
+carrega essa cor: o plano ao lado é branco, porque duas coisas coloridas num mesmo cabeçalho
+competem em vez de somar.
+
+Tudo em que o ponteiro pode agir também é branco, a partir de um nome só — `theme.INTERACTIVE`.
+Atualizar agora, o link de setup, a linha de status e os links do cartão Sobre eram coral cada um,
+o que punha a marca de um agente em coisas que não têm relação com agente nenhum, e deixava quatro
+pontos livres para divergir.
 
 As duas marcas também são dimensionadas uma contra a outra, e não pelo mesmo número. Pedidas com a
 mesma altura, ambas têm essa altura, mas o Clawd tem 20,8pt de largura e o Codex é um quadrado de
@@ -306,7 +310,7 @@ installer/          empacotamento       tools/       geradores de ícone e previ
 
 ```powershell
 uv sync                                           # cria o .venv com o grupo de dev
-uv run pytest                                     # 284 testes, sem rede e sem janela
+uv run pytest                                     # 326 testes, sem rede e sem janela
 uv run ruff check .                               # lint (regras em pyproject.toml)
 uv run python tools/preview.py docs/preview.png   # render offline das duas telas
 $env:AGENT_GAUGE_DEBUG=1; uv run agent-gauge    # imprime cada ciclo no console

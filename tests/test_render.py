@@ -342,3 +342,79 @@ def test_a_long_incident_keeps_the_arrow(qapp, settings):
     assert line.endswith(STATUS_ARROW)
     width, _ = paint.ink(line, 8)
     assert width <= COL, f"{width} > {COL}: the line overflows the card"
+
+
+# ------------------------------------------------- one colour for what you click
+def test_every_interactive_thing_shares_one_colour(qapp, settings):
+    """Refresh, setup, the status line and the about card's links used to be
+    coral apiece, which read as an agent's branding on things that have nothing
+    to do with an agent. They now come from one name, so they cannot drift."""
+    from agent_gauge import about, theme
+
+    assert theme.INTERACTIVE != theme.ACCENT
+    assert theme.INTERACTIVE == theme.TEXT
+    assert theme.INTERACTIVE.name() in about.link("https://example.com", "x")
+
+
+def test_the_plan_is_not_painted_in_an_agent_colour(qapp, settings):
+    """It sits beside the mark, and two coloured things in one header compete."""
+    from agent_gauge import theme
+
+    p = Panel(settings)
+    p.set_snapshot(live_snapshot(), "~1h40")
+    img = render(p)
+
+    # the header's right half, where the plan sits
+    tones = {img.pixelColor(x, y).name()
+             for y in range(14, 34)
+             for x in range(img.width() // 2, img.width() - 10)
+             if img.pixelColor(x, y).alpha() == 255}
+    assert tones, "found no plan text to measure"
+    assert theme.ACCENT.name() not in tones
+
+
+@pytest.mark.parametrize("state", ["_hover_refresh", "_hover_setup", "_hover_status"])
+def test_hover_lifts_text_to_the_interactive_colour(qapp, settings, state):
+    """Grey to white, not grey to coral.
+
+    Counted rather than looked for: the panel already paints its big number in
+    the same colour, so "is it present" would pass with the pointer nowhere
+    near. What has to change is how much of it there is.
+    """
+    from agent_gauge import theme
+
+    def painted(hovering):
+        p = Panel(settings)
+        snap = live_snapshot()
+        snap.setup = "signin"
+        p.set_snapshot(snap, "~1h40")
+        setattr(p, state, hovering)
+        img = render(p)
+        want = theme.INTERACTIVE.name()
+        return sum(1 for y in range(img.height()) for x in range(img.width())
+                   if img.pixelColor(x, y).alpha() == 255
+                   and img.pixelColor(x, y).name() == want)
+
+    assert painted(True) > painted(False)
+
+
+def test_published_screenshots_do_not_inherit_this_machine(qapp, tmp_path):
+    """tools/preview.py used to build its Settings from the real config, so the
+    picture on the site showed whichever agent the person generating it had
+    selected - it came within a commit of shipping a Codex panel as the app's
+    own screenshot."""
+    import sys
+    from pathlib import Path
+
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "tools"))
+    try:
+        import preview
+    finally:
+        sys.path.pop(0)
+
+    from agent_gauge.settings import DEFAULTS
+
+    settings = preview.fixed_settings()
+    assert settings["provider"] == DEFAULTS["provider"]
+    assert settings["language"] == DEFAULTS["language"]
+    assert settings["compact"] is False
