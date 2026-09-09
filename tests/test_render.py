@@ -396,3 +396,25 @@ def test_hover_lifts_text_to_the_interactive_colour(qapp, settings, state):
                    and img.pixelColor(x, y).name() == want)
 
     assert painted(True) > painted(False)
+
+
+def test_published_screenshots_do_not_inherit_this_machine(qapp, tmp_path):
+    """tools/preview.py used to build its Settings from the real config, so the
+    picture on the site showed whichever agent the person generating it had
+    selected - it came within a commit of shipping a Codex panel as the app's
+    own screenshot."""
+    import sys
+    from pathlib import Path
+
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "tools"))
+    try:
+        import preview
+    finally:
+        sys.path.pop(0)
+
+    from agent_gauge.settings import DEFAULTS
+
+    settings = preview.fixed_settings()
+    assert settings["provider"] == DEFAULTS["provider"]
+    assert settings["language"] == DEFAULTS["language"]
+    assert settings["compact"] is False

@@ -306,7 +306,7 @@ installer/          packaging           tools/       icon and preview generators
 
 ```powershell
 uv sync                                           # creates the .venv with the dev group
-uv run pytest                                     # 325 tests, no network, no windows
+uv run pytest                                     # 326 tests, no network, no windows
 uv run ruff check .                               # lint (rules in pyproject.toml)
 uv run python tools/preview.py docs/preview.png   # offline render of both surfaces
 $env:AGENT_GAUGE_DEBUG=1; uv run agent-gauge    # prints every cycle to the console

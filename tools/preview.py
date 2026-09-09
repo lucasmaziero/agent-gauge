@@ -21,7 +21,7 @@ from PySide6.QtWidgets import QApplication
 from agent_gauge import api, i18n, paint, theme, tokens
 from agent_gauge.panel import Panel
 from agent_gauge.poller import Snapshot
-from agent_gauge.settings import Settings
+from agent_gauge.settings import DEFAULTS, Settings
 from agent_gauge.widget import FloatingWidget
 
 GAP = 20
@@ -43,6 +43,19 @@ def snapshot(h5: float, d7: float, incidents: tuple[str, ...] = (), error: str =
                                   cache_read=6_029_281, sessions=2),
         incidents=list(incidents), subscription="max", error=error,
     )
+
+
+def fixed_settings() -> Settings:
+    """Defaults only, never this machine's preferences.
+
+    A published screenshot must not depend on which agent happens to be
+    selected wherever it was generated - that is how the site came within one
+    commit of offering a Codex panel as its picture of the app.
+    """
+    settings = Settings()
+    settings.update(DEFAULTS)
+    settings["compact"] = False
+    return settings
 
 
 def render(widget, scale: float = 1.0) -> QImage:
@@ -106,8 +119,7 @@ def shots(out_dir: Path, scale: float = 2.0) -> None:
     screenshot under English copy would be the one thing on the page that
     contradicts itself.
     """
-    settings = Settings()
-    settings["compact"] = False
+    settings = fixed_settings()
     out_dir.mkdir(parents=True, exist_ok=True)
 
     before = i18n.language()
@@ -143,7 +155,7 @@ def main() -> None:
         return
 
     out = Path(sys.argv[1] if len(sys.argv) > 1 else "preview.png")
-    settings = Settings()
+    settings = fixed_settings()
 
     states = (
         snapshot(12, 4),
