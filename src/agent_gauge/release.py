@@ -115,7 +115,11 @@ def fetch_latest() -> Latest:
         diag.record("update", problem="malformed")
         return Latest(problem="malformed")
 
-    tag = str(data.get("tag_name") or "")
+    if not isinstance(data, dict):
+        return Latest(problem="malformed")
+    tag = data.get("tag_name") or ""
+    if not isinstance(tag, str):
+        return Latest(problem="malformed")
     if not tag:
         diag.record("update", problem="untagged")
         return Latest(problem="untagged")

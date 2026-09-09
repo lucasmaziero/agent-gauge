@@ -30,6 +30,10 @@ class Provider(ABC):
     help_url: str       # where someone with no credentials should be sent
     status_host: str    # the status page this agent's outages are reported on
 
+    def auth_file(self) -> Path:
+        """Credentials file watched for renewal between collection cycles."""
+        return self.home() / "auth.json"
+
     @abstractmethod
     def home(self) -> Path:
         """The agent's own directory. Its existence is what tells "never

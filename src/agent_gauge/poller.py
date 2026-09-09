@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import contextlib
 import json
+import math
 import threading
 import time
 from collections import deque
@@ -12,6 +13,7 @@ from PySide6.QtCore import QThread, Signal
 
 from . import api, credentials, diag, paths, providers, signin, tokens
 from .i18n import t
+from .storage import atomic_write
 
 HISTORY_FILE = paths.config_dir() / "history.json"
 
@@ -94,7 +96,16 @@ class Poller(QThread):
     def run(self) -> None:
         while not self._stop:
             self.busy.emit(True)
-            snap = self._collect()
+            try:
+                snap = self._collect()
+            except Exception as exc:
+                # A bad external record must not permanently stop collection.
+                # Log only the exception type, never credential or response data.
+                self._idle = 0
+                self._watching = False
+                diag.record("collection", provider=self.provider.key,
+                            reason=type(exc).__name__)
+                snap = Snapshot(error=t("error.collection"))
             # Stamped here rather than inside _collect so the number the UI
             # counts down from is the one this loop actually waits.
             snap.interval = self._effective_interval()
@@ -109,7 +120,7 @@ class Poller(QThread):
 
     def _creds_mtime(self) -> float:
         try:
-            return paths.credentials_file().stat().st_mtime
+            return self.provider.auth_file().stat().st_mtime_ns
         except OSError:
             return 0.0
 
@@ -250,25 +261,27 @@ class Poller(QThread):
         with the session, is exactly when it is wanted."""
         try:
             stored = json.loads(HISTORY_FILE.read_text(encoding="utf-8"))
-        except (OSError, json.JSONDecodeError):
+        except (OSError, ValueError):
+            return
+        if not isinstance(stored, list):
             return
         cutoff = time.time() - tokens.WINDOW_SECONDS
         for item in stored[-self.HISTORY_MAX:]:
+            if not isinstance(item, list) or len(item) != 2:
+                continue
             try:
                 when, pct = float(item[0]), float(item[1])
             except (TypeError, ValueError, IndexError):
                 continue                     # one bad row must not lose the rest
-            if when >= cutoff:
+            if (math.isfinite(when) and math.isfinite(pct)
+                    and cutoff <= when <= time.time() + 1 and 0 <= pct <= 100):
                 self.history.append((when, pct))
+        self.history = deque(sorted(self.history), maxlen=self.HISTORY_MAX)
 
     def _save_history(self) -> None:
-        try:
-            HISTORY_FILE.parent.mkdir(parents=True, exist_ok=True)
-            HISTORY_FILE.write_text(
-                json.dumps([[round(w, 1), round(p, 2)] for w, p in self.history]),
-                encoding="utf-8")
-        except OSError:
-            pass                             # a lost baseline must never take the app down
+        with contextlib.suppress(OSError):
+            atomic_write(HISTORY_FILE,
+                         json.dumps([[round(w, 1), round(p, 2)] for w, p in self.history]))
 
     def burn_rate(self) -> float:
         """Percentage points per hour on the 5h window.

@@ -207,10 +207,18 @@ class About(QWidget):
         else:
             self.status.setText(t("about.current"))
 
-    def closeEvent(self, event) -> None:
-        if self._check and self._check.isRunning():
-            self._check.wait(2000)
-        super().closeEvent(event)
+    def dispose(self) -> None:
+        """Retire a translated card without destroying a running child thread."""
+        self.close()
+        if self._check:
+            self._check.finished.connect(self.deleteLater)
+        if not self._check or not self._check.isRunning():
+            self.deleteLater()
+
+    def wait_for_check(self) -> None:
+        """Keep the thread alive until its request finishes during shutdown."""
+        if self._check:
+            self._check.wait()
 
     # -------------------------------------------------------------- painting
     def paintEvent(self, _event) -> None:

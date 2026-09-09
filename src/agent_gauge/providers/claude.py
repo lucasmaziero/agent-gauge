@@ -23,6 +23,9 @@ class Claude(Provider):
     def home(self) -> Path:
         return paths.claude_dir()
 
+    def auth_file(self) -> Path:
+        return paths.credentials_file()
+
     def credentials(self) -> Credentials:
         # The short name, because these land in the widget's error column:
         # "faça login no Claude Code" is 139px against 120 available.

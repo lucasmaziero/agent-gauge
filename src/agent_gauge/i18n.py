@@ -100,6 +100,7 @@ STRINGS: dict[str, dict[str, str]] = {
         "error.unauthorized": "sign in to {agent} again - token refused (401)",
         "error.no_headers": "HTTP {code} response carried no usage headers",
         "error.network": "network: {reason}",
+        "error.collection": "could not read usage; retrying next cycle",
         "error.no_tray": "system tray unavailable",
     },
     "pt_BR": {
@@ -182,6 +183,7 @@ STRINGS: dict[str, dict[str, str]] = {
         "error.unauthorized": "refaça o login no {agent} - token recusado (401)",
         "error.no_headers": "resposta HTTP {code} sem headers de uso",
         "error.network": "rede: {reason}",
+        "error.collection": "não foi possível ler o uso; nova tentativa no próximo ciclo",
         "error.no_tray": "bandeja do sistema indisponível",
     },
 }
