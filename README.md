@@ -171,9 +171,18 @@ answers, and sending someone there would be a wrong answer wearing the shape of 
 
 Each agent's mascot wears its own colour - Anthropic's coral, and the blue-violet gradient OpenAI
 gives Codex - because they used to share the theme accent, which made the header look the same under
-either agent in the one place whose whole job is telling them apart. The colour gives way to gray on
-a fetch error or an open incident, the same signal the widget's badge gives: a mark that stayed
-on-brand through an outage would be a logo, not an indicator.
+either agent in the one place whose whole job is telling them apart. The plan beside it takes that
+colour too; in coral it kept saying "Anthropic" above Codex's numbers. The blue is the middle of the
+Codex ramp rather than the solid blue at its foot: that one measures 2.8:1 against the panel and is
+unreadable as small caps, where this one measures 6.7:1, better than the coral it replaces.
+
+The two marks are also sized against each other rather than to the same number. Asked for the same
+height they are both that tall, but Clawd is 20.8pt wide and the Codex mark 13pt square - two thirds
+the ink, which read as the smaller of the two. Codex is drawn 15% over. Full parity would need 25%,
+and that makes it the taller mark, which overcorrects into looking bigger.
+
+Colour gives way to gray on a fetch error or an open incident, the same signal the widget's badge
+gives: a mark that stayed on-brand through an outage would be a logo, not an indicator.
 
 **With no token** there is nothing to timestamp, so the footer carries the way out instead: a link
 to the setup page of whichever agent is being watched. It names the actual dead end - **Get Claude
@@ -294,7 +303,7 @@ installer/          packaging           tools/       icon and preview generators
 
 ```powershell
 uv sync                                           # creates the .venv with the dev group
-uv run pytest                                     # 280 tests, no network, no windows
+uv run pytest                                     # 284 tests, no network, no windows
 uv run ruff check .                               # lint (rules in pyproject.toml)
 uv run python tools/preview.py docs/preview.png   # offline render of both surfaces
 $env:AGENT_GAUGE_DEBUG=1; uv run agent-gauge    # prints every cycle to the console

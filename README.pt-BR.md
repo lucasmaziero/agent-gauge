@@ -171,9 +171,20 @@ ajuda.
 
 Cada agente veste a própria cor — o coral da Anthropic e o gradiente azul-violeta que a OpenAI dá ao
 Codex —, porque antes os dois usavam o mesmo accent do tema, o que deixava o cabeçalho igual sob
-qualquer agente justamente no lugar cuja única função é distingui-los. A cor cede lugar ao cinza
-quando há erro de coleta ou incidente aberto, o mesmo sinal que o selo do widget dá: um mascote que
-seguisse na cor da marca durante uma queda seria um logo, não um indicador.
+qualquer agente justamente no lugar cuja única função é distingui-los. O plano ao lado assume a
+mesma cor; em coral, ele seguia dizendo "Anthropic" sobre os números do Codex. O azul é o do meio do
+gradiente, e não o azul sólido do pé dele: aquele mede 2,8:1 contra o painel e é ilegível em
+versalete, enquanto este mede 6,7:1 — melhor que o coral que substitui.
+
+As duas marcas também são dimensionadas uma contra a outra, e não pelo mesmo número. Pedidas com a
+mesma altura, ambas têm essa altura, mas o Clawd tem 20,8pt de largura e o Codex é um quadrado de
+13pt — dois terços da tinta, o que lia como o menor dos dois. O Codex é desenhado 15% acima.
+Igualar de vez exigiria 25%, e aí ele passa a ser a marca mais alta, o que corrige demais e vira
+"maior".
+
+A cor cede lugar ao cinza quando há erro de coleta ou incidente aberto, o mesmo sinal que o selo do
+widget dá: um mascote que seguisse na cor da marca durante uma queda seria um logo, não um
+indicador.
 
 **Sem token** não há o que carimbar com hora, então o rodapé carrega a saída: um link para a página
 de setup do agente que está sendo monitorado. Ele nomeia o beco exato — **Instalar o Claude Code**
@@ -295,7 +306,7 @@ installer/          empacotamento       tools/       geradores de ícone e previ
 
 ```powershell
 uv sync                                           # cria o .venv com o grupo de dev
-uv run pytest                                     # 280 testes, sem rede e sem janela
+uv run pytest                                     # 284 testes, sem rede e sem janela
 uv run ruff check .                               # lint (regras em pyproject.toml)
 uv run python tools/preview.py docs/preview.png   # render offline das duas telas
 $env:AGENT_GAUGE_DEBUG=1; uv run agent-gauge    # imprime cada ciclo no console

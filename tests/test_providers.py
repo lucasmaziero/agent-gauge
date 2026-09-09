@@ -329,7 +329,13 @@ def test_every_provider_has_its_own_mark(qapp):
 def test_a_mark_is_the_height_it_was_asked_for(qapp, key):
     """The two fill different amounts of the viewBox - Clawd the y 5..20 band,
     the Codex mark the whole 24 - so each carries its own ink height. Sizing
-    both as though they were Clawd made one of them half again too big."""
+    both as though they were Clawd made one of them half again too big.
+
+    The asked height is then scaled by the mark's optical correction, which is
+    not a fudge factor: matching height alone leaves a compact shape reading
+    smaller than a wide one. The correction is what the caller gets, so it is
+    what this measures.
+    """
     from agent_gauge import brand, theme
 
     pixmap = brand.mark(key, 13, theme.ACCENT, 2.0)
@@ -337,7 +343,8 @@ def test_a_mark_is_the_height_it_was_asked_for(qapp, key):
     rows = [y for y in range(image.height())
             if any(image.pixelColor(x, y).alpha() > 8 for x in range(image.width()))]
     ink = (rows[-1] - rows[0] + 1) / pixmap.devicePixelRatio()
-    assert abs(ink - 13) <= 1.0          # antialiasing, not layout
+    expected = 13 * brand.MARKS[key].optical
+    assert abs(ink - expected) <= 1.0     # antialiasing, not layout
 
 
 def test_the_embedded_codex_path_matches_its_source(qapp):
@@ -493,3 +500,69 @@ def test_the_embedded_codex_ramp_matches_its_source(qapp):
                 re.findall(r'stop-color="(#[0-9A-Fa-f]{6})"', source.read_text(encoding="utf-8"))]
     embedded = [c.lower() for _, c in brand.MARKS["codex"].ink]
     assert embedded == expected
+
+
+def _ink_box(key, height=13, dpr=4.0):
+    """Width, height and area of a mark's ink, in points."""
+    from agent_gauge import brand
+
+    img = brand.mark(key, height, None, dpr).toImage()
+    pts = [(x, y) for y in range(img.height()) for x in range(img.width())
+           if img.pixelColor(x, y).alpha() > 40]
+    assert pts, f"{key} rendered nothing"
+    xs = [x for x, _ in pts]
+    ys = [y for _, y in pts]
+    return ((max(xs) - min(xs) + 1) / dpr,
+            (max(ys) - min(ys) + 1) / dpr,
+            len(pts) / (dpr * dpr))
+
+
+def test_the_marks_carry_comparable_visual_weight(qapp):
+    """Asked for the same height, Clawd is 20.8pt wide and the Codex mark 13pt
+    square - two thirds the ink, which is why Codex read as the smaller of the
+    two in a header built to present them as equals."""
+    _, _, claude = _ink_box("claude")
+    _, _, codex = _ink_box("codex")
+    assert 0.75 <= codex / claude <= 0.95, f"codex carries {codex / claude:.0%} of Clawd's ink"
+
+
+def test_the_correction_stops_short_of_making_codex_the_taller_mark(qapp):
+    """Full ink parity needs 1.25, and a mark that overshoots its neighbour in
+    height stops looking equal and starts looking bigger."""
+    _, claude_h, _ = _ink_box("claude")
+    _, codex_h, _ = _ink_box("codex")
+    assert 1.0 < codex_h / claude_h < 1.2, f"codex is {codex_h / claude_h:.0%} of Clawd's height"
+
+
+def test_the_plan_wears_the_agent_s_own_colour(qapp):
+    """In the theme accent it said "Anthropic" over Codex's numbers."""
+    from agent_gauge import brand, theme
+
+    assert brand.tint("claude") == theme.ACCENT
+    assert brand.tint("codex") != theme.ACCENT
+    assert brand.tint("codex").name() == "#7a9dff"
+
+
+def test_the_plan_colour_is_readable_on_the_panel(qapp):
+    """The solid blue at the foot of the Codex ramp is the obvious pick and the
+    wrong one: it measures 2.8:1 against the panel, below any usable floor.
+    Whatever is chosen has to clear the coral it replaces."""
+    from agent_gauge import brand, theme
+
+    def luminance(c):
+        def channel(v):
+            v /= 255
+            return v / 12.92 if v <= 0.03928 else ((v + 0.055) / 1.055) ** 2.4
+        return (0.2126 * channel(c.red()) + 0.7152 * channel(c.green())
+                + 0.0722 * channel(c.blue()))
+
+    def contrast(a, b):
+        la, lb = luminance(a), luminance(b)
+        return (max(la, lb) + 0.05) / (min(la, lb) + 0.05)
+
+    from PySide6.QtGui import QColor
+
+    panel = QColor(theme.SURFACE)
+    baseline = contrast(theme.ACCENT, panel)
+    for key in ("claude", "codex"):
+        assert contrast(brand.tint(key), panel) >= baseline - 0.01
