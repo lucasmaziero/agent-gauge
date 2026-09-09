@@ -356,46 +356,65 @@ def test_every_interactive_thing_shares_one_colour(qapp, settings):
     assert theme.INTERACTIVE.name() in about.link("https://example.com", "x")
 
 
-def test_the_plan_is_not_painted_in_an_agent_colour(qapp, settings):
-    """It sits beside the mark, and two coloured things in one header compete."""
+def test_the_plan_is_not_painted_in_an_agent_colour(qapp, settings, monkeypatch):
+    """It sits beside the mark, and two coloured things in one header compete.
+
+    Read off the request rather than the pixels: a band of the rendered image
+    would be found empty on a runner whose stub font draws no opaque text, and
+    an empty band satisfies "the accent is not in here" by saying nothing.
+    """
+    from agent_gauge import paint as paint_module
     from agent_gauge import theme
 
+    drawn = {}
+    real = paint_module.text
+
+    def spy(painter, rect, s, color, size, *args, **kwargs):
+        drawn[s] = color.name()
+        return real(painter, rect, s, color, size, *args, **kwargs)
+
+    monkeypatch.setattr(paint_module, "text", spy)
     p = Panel(settings)
     p.set_snapshot(live_snapshot(), "~1h40")
-    img = render(p)
+    render(p)
 
-    # the header's right half, where the plan sits
-    tones = {img.pixelColor(x, y).name()
-             for y in range(14, 34)
-             for x in range(img.width() // 2, img.width() - 10)
-             if img.pixelColor(x, y).alpha() == 255}
-    assert tones, "found no plan text to measure"
-    assert theme.ACCENT.name() not in tones
+    assert "MAX" in drawn, f"the plan label was never drawn: {list(drawn)}"
+    assert drawn["MAX"] == theme.TEXT.name()
+    assert drawn["MAX"] != theme.ACCENT.name()
 
 
 @pytest.mark.parametrize("state", ["_hover_refresh", "_hover_setup", "_hover_status"])
-def test_hover_lifts_text_to_the_interactive_colour(qapp, settings, state):
+def test_hover_lifts_text_to_the_interactive_colour(qapp, settings, monkeypatch, state):
     """Grey to white, not grey to coral.
 
-    Counted rather than looked for: the panel already paints its big number in
-    the same colour, so "is it present" would pass with the pointer nowhere
-    near. What has to change is how much of it there is.
+    Read off the colour handed to paint.text rather than off the pixels. An
+    earlier version counted rasterised pixels and passed here while failing on
+    Linux, where the offscreen plugin's stub font draws no opaque text at all -
+    46 pixels with the pointer on it and 46 with it off. Asking what colour was
+    requested is both the actual claim and the same answer on every platform.
     """
+    from agent_gauge import paint as paint_module
     from agent_gauge import theme
 
-    def painted(hovering):
+    def asked_for(hovering):
+        drawn = []
+        real = paint_module.text
+
+        def spy(painter, rect, s, color, size, *args, **kwargs):
+            drawn.append(color.name())
+            return real(painter, rect, s, color, size, *args, **kwargs)
+
+        monkeypatch.setattr(paint_module, "text", spy)
         p = Panel(settings)
         snap = live_snapshot()
         snap.setup = "signin"
         p.set_snapshot(snap, "~1h40")
         setattr(p, state, hovering)
-        img = render(p)
-        want = theme.INTERACTIVE.name()
-        return sum(1 for y in range(img.height()) for x in range(img.width())
-                   if img.pixelColor(x, y).alpha() == 255
-                   and img.pixelColor(x, y).name() == want)
+        render(p)
+        monkeypatch.undo()
+        return drawn.count(theme.INTERACTIVE.name())
 
-    assert painted(True) > painted(False)
+    assert asked_for(True) == asked_for(False) + 1
 
 
 def test_published_screenshots_do_not_inherit_this_machine(qapp, tmp_path):
