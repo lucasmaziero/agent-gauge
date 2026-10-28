@@ -208,6 +208,10 @@ class FloatingWidget(QWidget):
         if not snap.ok:
             return t("widget.tooltip_error", error=snap.error or t("widget.no_data"))
         u, now = snap.usage, time.time()
+        if u.d7 is None:
+            return t("widget.tooltip_no_7d", h5=u.h5,
+                     h5_clock=theme.fmt_clock(u.h5_reset),
+                     h5_left=theme.fmt_countdown(u.h5_reset, now))
         return t("widget.tooltip", h5=u.h5, d7=u.d7,
                  h5_clock=theme.fmt_clock(u.h5_reset),
                  d7_clock=theme.fmt_clock(u.d7_reset),
@@ -307,7 +311,8 @@ class FloatingWidget(QWidget):
             ("5h", theme.fmt_countdown(u.h5_reset, now), theme.TEXT,
              theme.fmt_clock(u.h5_reset)),
             ("7d", f"{u.d7:.0f}%", theme.grad_color(u.d7),
-             theme.fmt_countdown(u.d7_reset, now)),
+             theme.fmt_countdown(u.d7_reset, now)) if u.d7 is not None else
+            ("7d", theme.NO_DATA, theme.FAINT, ""),
         )
         for i, (label, value, color, tail) in enumerate(rows):
             row = QRectF(COL_X, top + i * ROW_H, col_w, ROW_H)

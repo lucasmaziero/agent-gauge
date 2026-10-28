@@ -21,10 +21,13 @@ STRINGS: dict[str, dict[str, str]] = {
         "widget.no_data": "no data",
         "widget.tooltip": ("5h: {h5:.0f}%  resets {h5_clock} (in {h5_left})\n"
                            "7d: {d7:.0f}%  resets {d7_clock} (in {d7_left})"),
+        "widget.tooltip_no_7d": ("5h: {h5:.0f}%  resets {h5_clock} (in {h5_left})\n"
+                                 "7d: no weekly limit"),
         "widget.tooltip_error": "Agent Gauge: {error}",
         # panel
         "panel.window_5h": "5-hour window",
         "panel.window_7d": "7-day window",
+        "panel.no_7d": "no weekly limit on this plan",
         "panel.waiting": "waiting for the first fetch",
         "panel.resets": "resets {clock} · in {left}",
         "panel.resets_on": "resets {weekday} {clock} · in {left}",
@@ -81,6 +84,8 @@ STRINGS: dict[str, dict[str, str]] = {
         "tray.collecting": "Agent Gauge: collecting…",
         "tray.tooltip": ("Claude · 5h {h5:.0f}% (resets {h5_clock})\n"
                          "7d {d7:.0f}% (resets {d7_clock})"),
+        "tray.tooltip_no_7d": ("Claude · 5h {h5:.0f}% (resets {h5_clock})\n"
+                               "7d: no weekly limit"),
         # time
         "time.now": "now",
         # errors, all user facing
@@ -109,10 +114,13 @@ STRINGS: dict[str, dict[str, str]] = {
         "widget.no_data": "sem dados",
         "widget.tooltip": ("5h: {h5:.0f}%  reseta {h5_clock} (em {h5_left})\n"
                            "7d: {d7:.0f}%  reseta {d7_clock} (em {d7_left})"),
+        "widget.tooltip_no_7d": ("5h: {h5:.0f}%  reseta {h5_clock} (em {h5_left})\n"
+                                 "7d: sem limite semanal"),
         "widget.tooltip_error": "Agent Gauge: {error}",
         # panel
         "panel.window_5h": "Janela de 5 horas",
         "panel.window_7d": "Janela de 7 dias",
+        "panel.no_7d": "sem limite semanal neste plano",
         "panel.waiting": "aguardando primeira coleta",
         "panel.resets": "reseta {clock} · em {left}",
         "panel.resets_on": "reseta {weekday} {clock} · em {left}",
@@ -169,6 +177,8 @@ STRINGS: dict[str, dict[str, str]] = {
         "tray.collecting": "Agent Gauge: coletando…",
         "tray.tooltip": ("Claude · 5h {h5:.0f}% (reseta {h5_clock})\n"
                          "7d {d7:.0f}% (reseta {d7_clock})"),
+        "tray.tooltip_no_7d": ("Claude · 5h {h5:.0f}% (reseta {h5_clock})\n"
+                               "7d: sem limite semanal"),
         # time
         "time.now": "agora",
         # errors, all user facing

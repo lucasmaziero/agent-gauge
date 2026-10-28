@@ -220,16 +220,23 @@ class Panel(QWidget):
         """7-day window: supporting, no card, continuous bar instead of segments."""
         right = Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter
         head = QRectF(rect.x(), rect.y(), rect.width(), 18)
+        known = bool(u) and u.d7 is not None
         paint.text(p, head, t("panel.window_7d"), theme.MUTED, 9)
-        paint.text(p, head, f"{u.d7:.0f}%" if u else theme.NO_DATA,
-                   theme.grad_color(u.d7) if u else theme.FAINT,
+        paint.text(p, head, f"{u.d7:.0f}%" if known else theme.NO_DATA,
+                   theme.grad_color(u.d7) if known else theme.FAINT,
                    13, QFont.Weight.DemiBold, align=right)
+
+        foot = QRectF(rect.x(), rect.y() + 32, rect.width(), 16)
+        if u and not known:
+            # No window on this plan: an empty bar and a reset time would both
+            # describe a limit that is not there.
+            paint.text(p, foot.translated(0, -8), t("panel.no_7d"), theme.FAINT, 8)
+            return
 
         paint.bar(p, QRectF(rect.x(), rect.y() + 24, rect.width(), 4), u.d7 if u else 0.0)
 
         if not u:
             return
-        foot = QRectF(rect.x(), rect.y() + 32, rect.width(), 16)
         paint.text(p, foot, t("panel.resets_on", weekday=theme.fmt_weekday(u.d7_reset),
                               clock=theme.fmt_clock(u.d7_reset),
                               left=theme.fmt_countdown(u.d7_reset, now)), theme.FAINT, 8)

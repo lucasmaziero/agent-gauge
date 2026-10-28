@@ -429,13 +429,18 @@ class App(QObject):
         self.snap = snap
         if DEBUG:
             u = snap.usage
+            d7 = "none" if u.d7 is None else f"{u.d7:.1f}"
             print(f"[{time.strftime('%H:%M:%S')}] ok={snap.ok} 5h={u.h5:.1f} "
-                  f"7d={u.d7:.1f} err={snap.error!r}", flush=True)
+                  f"7d={d7} err={snap.error!r}", flush=True)
         self.widget.set_snapshot(snap)
         self.panel.set_snapshot(snap, self.poller.projection(snap.usage))
         self._maybe_alert(snap)
         self.tray.setIcon(tray_icon(snap))
-        if snap.ok:
+        if snap.ok and snap.usage.d7 is None:
+            u = snap.usage
+            self.tray.setToolTip(t("tray.tooltip_no_7d", h5=u.h5,
+                                   h5_clock=theme.fmt_clock(u.h5_reset)))
+        elif snap.ok:
             u = snap.usage
             self.tray.setToolTip(t("tray.tooltip", h5=u.h5, d7=u.d7,
                                    h5_clock=theme.fmt_clock(u.h5_reset),
