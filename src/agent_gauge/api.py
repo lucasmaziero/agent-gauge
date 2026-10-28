@@ -44,7 +44,7 @@ class Usage:
     """One reading of the unified rate-limit headers."""
 
     h5: float = 0.0                 # 5h utilization, 0-100
-    d7: float = 0.0                 # 7d utilization, 0-100
+    d7: float | None = None         # 7d utilization, 0-100; None: plan has no 7d window
     h5_reset: int = 0               # epoch of the 5h window reset
     d7_reset: int = 0
     unified_reset: int = 0
@@ -63,7 +63,7 @@ class Usage:
 
     @property
     def worst(self) -> float:
-        return max(self.h5, self.d7)
+        return max(self.h5, self.d7 or 0.0)
 
 
 def _headers(token: str) -> dict[str, str]:
@@ -93,9 +93,11 @@ def parse(headers, code: int) -> Usage:
                          error=t("error.unauthorized", agent="Claude"))
         return Usage(ok=False, code=code, error=t("error.no_headers", code=code))
 
+    # Team plans answer with no 7d headers at all: the window does not exist
+    # there. Read as 0 it showed "0%", which says "unused", not "no limit".
     return Usage(
         h5=_num(headers, H5U, 100.0),
-        d7=_num(headers, D7U, 100.0),
+        d7=_num(headers, D7U, 100.0) if headers.get(D7U) is not None else None,
         h5_reset=int(_num(headers, H5R)),
         d7_reset=int(_num(headers, D7R)),
         unified_reset=int(_num(headers, URS)),

@@ -32,12 +32,20 @@ def test_reset_headers_become_epoch_ints():
     assert usage.d7_reset == 1788499844
 
 
-def test_missing_optional_headers_default_to_zero():
-    usage = api.parse({api.H5U: "0.1"}, 200)
+def test_missing_7d_window_is_none_not_zero():
+    """What a Claude Team account answers (issue #1): no 7d headers at all.
+    Zero would read as "unused this week"; the window does not exist."""
+    usage = api.parse({api.H5U: "0.1", api.UST: "allowed"}, 200)
     assert usage.ok
-    assert usage.d7 == 0.0
+    assert usage.d7 is None
     assert usage.d7_reset == 0
     assert usage.status_7d == ""
+    assert usage.worst == 10.0
+
+
+def test_7d_reported_as_zero_stays_zero():
+    usage = api.parse({api.H5U: "0.1", api.D7U: "0"}, 200)
+    assert usage.d7 == 0.0
 
 
 def test_garbage_values_do_not_raise():

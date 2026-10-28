@@ -51,11 +51,22 @@ def live_snapshot() -> Snapshot:
     )
 
 
+def no_weekly_snapshot() -> Snapshot:
+    """A Claude Team reading: the 5h window only."""
+    now = time.time()
+    return Snapshot(
+        usage=api.Usage(h5=3, h5_reset=int(now + 8040), status_overall="allowed",
+                        claim="five_hour", ok=True),
+        subscription="team",
+    )
+
+
 def error_snapshot() -> Snapshot:
     return Snapshot(usage=api.Usage(ok=False), error="token recusado (401)")
 
 
-@pytest.mark.parametrize("snap", [None, live_snapshot(), error_snapshot()])
+@pytest.mark.parametrize("snap", [None, live_snapshot(), no_weekly_snapshot(),
+                                  error_snapshot()])
 def test_widget_paints_in_every_state(qapp, settings, snap):
     w = FloatingWidget(settings)
     if snap is not None:
@@ -108,6 +119,14 @@ def test_ring_number_stays_clear_of_the_stroke(qapp, real_fonts, pct):
     assert size >= RING_TEXT_MIN
 
 
+def test_tooltip_says_there_is_no_weekly_limit(qapp, settings):
+    """Neither a percentage nor a reset for a window the plan does not have."""
+    w = FloatingWidget(settings)
+    weekly = w._tooltip(no_weekly_snapshot()).splitlines()[1]
+    assert "%" not in weekly
+    assert theme.NO_DATA not in weekly
+
+
 def test_widget_paints_while_busy(qapp, settings):
     w = FloatingWidget(settings)
     w.set_snapshot(live_snapshot())
@@ -141,7 +160,8 @@ def test_refresh_ring_fits_inside_the_card(qapp, settings, compact):
     assert center.y() + outer <= card.bottom()
 
 
-@pytest.mark.parametrize("snap", [None, live_snapshot(), error_snapshot()])
+@pytest.mark.parametrize("snap", [None, live_snapshot(), no_weekly_snapshot(),
+                                  error_snapshot()])
 def test_panel_paints_in_every_state(qapp, settings, snap):
     p = Panel(settings)
     if snap is not None:
